@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.peach.fileservice.dao.AttachDao">
+    <sql id="allColumn">
+        ID,                                               FILE_NAME,                                        FILE_PATH,                                        FILE_SIZE,
+        ORIGINAL_FILE_NAME,                               CREATED_TIME,                                     MODIFIED_TIME,                                    CREATOR,
+        CREATOR_NAME,                                     MODIFIER,                                         MODIFIER_NAME,                                    FILE_TYPE,
+        IS_DELETED
+    </sql>
+
+    <sql id="allColumnAlias">
+        ID as id,                                         FILE_NAME as fileName,                            FILE_PATH as filePath,                            FILE_SIZE as fileSize,
+        ORIGINAL_FILE_NAME as originalFileName,           CREATED_TIME as createdTime,                      MODIFIED_TIME as modifiedTime,                    CREATOR as creator,
+        CREATOR_NAME as CREATOR_NAME,                     MODIFIER as modifier,                             MODIFIER_NAME as modifierName,                    FILE_TYPE as fileType,
+        IS_DELETED as isDeleted
+    </sql>
+
+    <sql id="allColumnValue">
+        #{id,jdbcType=VARCHAR},                 #{fileName,jdbcType=VARCHAR},           #{filePath,jdbcType=VARCHAR},           #{fileSize,jdbcType=VARCHAR},
+        #{originalFileName,jdbcType=VARCHAR},   #{createdTime,jdbcType=VARCHAR},        #{modifiedTime,jdbcType=VARCHAR},       #{creator,jdbcType=VARCHAR},
+        #{CREATOR_NAME,jdbcType=VARCHAR},       #{modifier,jdbcType=VARCHAR},           #{modifierName,jdbcType=VARCHAR},       #{fileType,jdbcType=VARCHAR},
+        #{isDeleted,jdbcType=VARCHAR}
+    </sql>
+
+    <sql id="itemAllColumnValue">
+        #{item.id,jdbcType=VARCHAR},            #{item.fileName,jdbcType=VARCHAR},      #{item.filePath,jdbcType=VARCHAR},      #{item.fileSize,jdbcType=VARCHAR},
+        #{item.originalFileName,jdbcType=VARCHAR},#{item.createdTime,jdbcType=VARCHAR},   #{item.modifiedTime,jdbcType=VARCHAR},  #{item.creator,jdbcType=VARCHAR},
+        #{item.CREATOR_NAME,jdbcType=VARCHAR},  #{item.modifier,jdbcType=VARCHAR},      #{item.modifierName,jdbcType=VARCHAR},  #{item.fileType,jdbcType=VARCHAR},
+        #{item.isDeleted,jdbcType=VARCHAR}
+    </sql>
+
+    <sql id="allColumnSet">
+        <trim suffixOverrides=",">
+            <if test="fileName != null and fileName != ''">
+                FILE_NAME = #{fileName,jdbcType=VARCHAR},
+            </if>
+            <if test="filePath != null and filePath != ''">
+                FILE_PATH = #{filePath,jdbcType=VARCHAR},
+            </if>
+            <if test="fileSize != null">
+                FILE_SIZE = #{fileSize,jdbcType=VARCHAR},
+            </if>
+            <if test="originalFileName != null and originalFileName != ''">
+                ORIGINAL_FILE_NAME = #{originalFileName,jdbcType=VARCHAR},
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                CREATED_TIME = #{createdTime,jdbcType=VARCHAR},
+            </if>
+            <if test="modifiedTime != null and modifiedTime != ''">
+                MODIFIED_TIME = #{modifiedTime,jdbcType=VARCHAR},
+            </if>
+            <if test="creator != null and creator != ''">
+                CREATOR = #{creator,jdbcType=VARCHAR},
+            </if>
+            <if test="CREATOR_NAME != null and CREATOR_NAME != ''">
+                CREATOR_NAME = #{CREATOR_NAME,jdbcType=VARCHAR},
+            </if>
+            <if test="modifier != null and modifier != ''">
+                MODIFIER = #{modifier,jdbcType=VARCHAR},
+            </if>
+            <if test="modifierName != null and modifierName != ''">
+                MODIFIER_NAME = #{modifierName,jdbcType=VARCHAR},
+            </if>
+            <if test="fileType != null and fileType != ''">
+                FILE_TYPE = #{fileType,jdbcType=VARCHAR},
+            </if>
+            <if test="isDeleted != null">
+                IS_DELETED = #{isDeleted,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="updateSelectiveColumn">
+        <trim suffixOverrides=",">
+            <if test="fileName != null and fileName != ''">
+                FILE_NAME,
+            </if>
+            <if test="filePath != null and filePath != ''">
+                FILE_PATH,
+            </if>
+            <if test="fileSize != null">
+                FILE_SIZE,
+            </if>
+            <if test="originalFileName != null and originalFileName != ''">
+                ORIGINAL_FILE_NAME,
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                CREATED_TIME,
+            </if>
+            <if test="modifiedTime != null and modifiedTime != ''">
+                MODIFIED_TIME,
+            </if>
+            <if test="creator != null and creator != ''">
+                CREATOR,
+            </if>
+            <if test="CREATOR_NAME != null and CREATOR_NAME != ''">
+                CREATOR_NAME,
+            </if>
+            <if test="modifier != null and modifier != ''">
+                MODIFIER,
+            </if>
+            <if test="modifierName != null and modifierName != ''">
+                MODIFIER_NAME,
+            </if>
+            <if test="fileType != null and fileType != ''">
+                FILE_TYPE,
+            </if>
+            <if test="isDeleted != null">
+                IS_DELETED,
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="updateSelectiveValue">
+        <trim suffixOverrides=",">
+            <if test="fileName != null and fileName != ''">
+                #{fileName,jdbcType=VARCHAR},
+            </if>
+            <if test="filePath != null and filePath != ''">
+                #{filePath,jdbcType=VARCHAR},
+            </if>
+            <if test="fileSize != null">
+                #{fileSize,jdbcType=VARCHAR},
+            </if>
+            <if test="originalFileName != null and originalFileName != ''">
+                #{originalFileName,jdbcType=VARCHAR},
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                #{createdTime,jdbcType=VARCHAR},
+            </if>
+            <if test="modifiedTime != null and modifiedTime != ''">
+                #{modifiedTime,jdbcType=VARCHAR},
+            </if>
+            <if test="creator != null and creator != ''">
+                #{creator,jdbcType=VARCHAR},
+            </if>
+            <if test="CREATOR_NAME != null and CREATOR_NAME != ''">
+                #{CREATOR_NAME,jdbcType=VARCHAR},
+            </if>
+            <if test="modifier != null and modifier != ''">
+                #{modifier,jdbcType=VARCHAR},
+            </if>
+            <if test="modifierName != null and modifierName != ''">
+                #{modifierName,jdbcType=VARCHAR},
+            </if>
+            <if test="fileType != null and fileType != ''">
+                #{fileType,jdbcType=VARCHAR},
+            </if>
+            <if test="isDeleted != null">
+                #{isDeleted,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="allColumnCond">
+        <if test="id != null and id != ''">
+            AND ID = #{id,jdbcType=VARCHAR}
+        </if>
+        <if test="fileName != null and fileName != ''">
+            AND FILE_NAME = #{fileName,jdbcType=VARCHAR}
+        </if>
+        <if test="filePath != null and filePath != ''">
+            AND FILE_PATH = #{filePath,jdbcType=VARCHAR}
+        </if>
+        <if test="fileSize != null">
+            AND FILE_SIZE = #{fileSize,jdbcType=VARCHAR}
+        </if>
+        <if test="originalFileName != null and originalFileName != ''">
+            AND ORIGINAL_FILE_NAME = #{originalFileName,jdbcType=VARCHAR}
+        </if>
+        <if test="createdTime != null and createdTime != ''">
+            AND CREATED_TIME = #{createdTime,jdbcType=VARCHAR}
+        </if>
+        <if test="modifiedTime != null and modifiedTime != ''">
+            AND MODIFIED_TIME = #{modifiedTime,jdbcType=VARCHAR}
+        </if>
+        <if test="creator != null and creator != ''">
+            AND CREATOR = #{creator,jdbcType=VARCHAR}
+        </if>
+        <if test="CREATOR_NAME != null and CREATOR_NAME != ''">
+            AND CREATOR_NAME = #{CREATOR_NAME,jdbcType=VARCHAR}
+        </if>
+        <if test="modifier != null and modifier != ''">
+            AND MODIFIER = #{modifier,jdbcType=VARCHAR}
+        </if>
+        <if test="modifierName != null and modifierName != ''">
+            AND MODIFIER_NAME = #{modifierName,jdbcType=VARCHAR}
+        </if>
+        <if test="fileType != null and fileType != ''">
+            AND FILE_TYPE = #{fileType,jdbcType=VARCHAR}
+        </if>
+        <if test="isDeleted != null">
+            AND IS_DELETED = #{isDeleted,jdbcType=VARCHAR}
+        </if>
+    </sql>
+
+    <insert id="insert" parameterType="com.peach.fileservice.AttachDO">
+        INSERT INTO PEACH_ATTACH (
+        <include refid="allColumn" />
+        ) VALUES (
+        <include refid="allColumnValue" />
+        )
+    </insert>
+
+    <insert id="batchInsert" parameterType="com.peach.fileservice.AttachDO">
+        INSERT INTO PEACH_ATTACH (
+        <include refid="allColumn" />
+        ) VALUES
+        <foreach collection="list" index="index" item="item">
+            (<include refid="allColumnValue"/>)
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.peach.fileservice.AttachDO">
+        UPDATE SET PEACH_ATTACH
+        <include refid="allColumnSet" />
+        WHERE
+        <include refid="allColumnCond" />
+    </update>
+
+    <delete id="delById" parameterType="string">
+        DELETE FROM PEACH_ATTACH
+        WHERE
+            ID = #{value,jdbcType=VARCHAR}
+    </delete>
+
+    <delete id="delByIds" parameterType="java.util.List">
+        DELETE FROM PEACH_ATTACH
+        WHERE ID IN
+        <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=VARCHAR}
+        </foreach>
+    </delete>
+
+    <delete id="del" parameterType="com.peach.fileservice.AttachDO">
+        DELETE FROM PEACH_ATTACH
+        WHERE 1=1
+        <include refid="allColumnCond" />
+    </delete>
+
+    <update id="updateById" parameterType="java.lang.String">
+        UPDATE PEACH_ATTACH SET
+        <include refid="allColumnSet" />
+        WHERE ID =  #{id,jdbcType=VARCHAR}
+    </update>
+
+    <select id="selectById" parameterType="string" resultType="com.peach.fileservice.AttachDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH
+        WHERE ID = #{value,jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectByIds" parameterType="java.util.List" resultType="com.peach.fileservice.AttachDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH
+        WHERE ID IN
+        <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=VARCHAR}
+        </foreach>
+    </select>
+
+    <select id="select" parameterType="com.peach.fileservice.AttachDO" resultType="com.peach.fileservice.AttachDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH
+        WHERE 1=1
+        <include refid="allColumnCond" />
+    </select>
+
+    <select id="count" parameterType="com.peach.fileservice.AttachDO" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM PEACH_ATTACH
+        WHERE 1=1
+        <include refid="allColumnCond" />
+    </select>
+</mapper>

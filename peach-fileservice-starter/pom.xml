@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.peach.cn</groupId>
+        <artifactId>peach-fileservice</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>peach-fileservice-starter</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.peach.cn</groupId>
+            <artifactId>peach-fileservice-rest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.peach.cn</groupId>
+            <artifactId>peach-fileservice-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.peach.cn</groupId>
+            <artifactId>peach-fileservice-entity</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.peach.cn</groupId>
+            <artifactId>peach-fileservice-resource</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.peach.cn</groupId>
+            <artifactId>peach-fileservice-entity</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>make-assem-zip</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <zip destfile="target/fileservice-${project.version}.zip"
+                                     encoding="utf-8">
+                                    <zipfileset dir="../peach-fileservice-api/target" prefix="" excludes="*-sources.jar" includes="*.jar" />
+                                    <zipfileset dir="../peach-fileservice-common/target" prefix=""  excludes="*-sources.jar" includes="*.jar"/>
+                                    <zipfileset dir="../peach-fileservice-entity/target" prefix=""  excludes="*-sources.jar" includes="*.jar"/>
+                                    <zipfileset dir="../peach-fileservice-resource/target" prefix=""  excludes="*-sources.jar" includes="*.jar"/>
+                                    <zipfileset dir="../peach-fileservice-rest/target" prefix=""  excludes="*-sources.jar" includes="*.jar"/>
+                                    <zipfileset dir="../peach-fileservice-service/target" prefix=""  excludes="*-sources.jar" includes="*.jar"/>
+                                    <zipfileset dir="target" prefix="" excludes="*-sources.jar" includes="*.jar"/>
+                                </zip>
+                                <move file="target/fileservice-${project.version}.zip" tofile="../fileservice-${project.version}.zip" />
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

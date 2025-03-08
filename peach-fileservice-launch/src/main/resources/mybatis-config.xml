@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <settings>
+        <setting name="defaultStatementTimeout" value="60"/>
+        <setting name="logImpl" value="STDOUT_LOGGING" />
+        <setting name="logImpl" value="SLF4J" />
+        <setting name="callSettersOnNulls" value="true"/>
+        <setting name="jdbcTypeForNull" value="NULL" />
+    </settings>
+    <typeAliases>
+    </typeAliases>
+    <plugins>
+        <plugin interceptor="com.github.pagehelper.PageInterceptor">
+            <!--<property name="helperDialect" value="mysql" />-->
+            <property name="autoRuntimeDialect" value="false" />
+            <property name="reasonable" value="true" />
+            <property name="supportMethodsArguments" value="false" />
+            <property name="closeConn" value="false" />
+        </plugin>
+    </plugins>
+    <databaseIdProvider type="DB_VENDOR">
+<!--        <property name="H2" value="h2" />-->
+<!--        <property name="Informix" value="informix" />-->
+        <property name="MySQL" value="mysql"/>
+<!--        <property name="Oracle" value="oracle" />-->
+<!--        <property name="PostgreSQL" value="postgresql" />-->
+    </databaseIdProvider>
+</configuration>

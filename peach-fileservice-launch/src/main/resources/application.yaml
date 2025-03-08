@@ -1,0 +1,4 @@
+debug: false
+spring:
+  profiles:
+    include: server,db,log,file

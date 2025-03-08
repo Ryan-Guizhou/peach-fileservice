@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.peach.cn</groupId>
+    <artifactId>peach-fileservice</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>peach-fileservice</name>
+    <packaging>pom</packaging>
+
+    <description>Base Service For File</description>
+
+
+    <parent>
+        <groupId>com.peach.cn</groupId>
+        <artifactId>peach-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.peach.cn</groupId>
+                <artifactId>peach-fileservice-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.peach.cn</groupId>
+                <artifactId>peach-fileservice-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.peach.cn</groupId>
+                <artifactId>peach-fileservice-entity</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.peach.cn</groupId>
+                <artifactId>peach-fileservice-rest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.peach.cn</groupId>
+                <artifactId>peach-fileservice-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.peach.cn</groupId>
+                <artifactId>peach-fileservice-resource</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.peach.cn</groupId>
+                <artifactId>peach-fileservice-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.peach.cn</groupId>
+                <artifactId>pub-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <modules>
+        <module>peach-fileservice-api</module>
+        <module>peach-fileservice-entity</module>
+        <module>peach-fileservice-service</module>
+        <module>peach-fileservice-rest</module>
+        <module>peach-fileservice-starter</module>
+        <module>peach-fileservice-launch</module>
+        <module>peach-fileservice-resource</module>
+        <module>peach-fileservice-common</module>
+    </modules>
+
+
+</project>
