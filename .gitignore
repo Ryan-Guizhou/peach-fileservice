@@ -1,7 +1,7 @@
 ### Custom ###
 application-db.yaml
+application-file.yaml
 
-HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
