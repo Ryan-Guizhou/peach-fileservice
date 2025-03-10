@@ -1,6 +1,6 @@
-package com.peach.fileservice.impl;
+package com.peach.fileservice.impl.file;
 
-import com.peach.fileservice.AbstractFileStorageService;
+import com.peach.fileservice.impl.AbstractFileStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

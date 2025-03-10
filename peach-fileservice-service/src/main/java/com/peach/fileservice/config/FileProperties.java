@@ -33,6 +33,11 @@ public class FileProperties {
     private String type;
 
     /**
+     * 用于拼接完整的文件访问路径
+     */
+    private String nginxProxy;
+
+    /**
      * monio相关配置
      */
     private MinioConfig minio;

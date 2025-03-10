@@ -1,31 +1,27 @@
-package com.peach.fileservice.impl;
+package com.peach.fileservice.impl.file;
 
 import cn.hutool.core.io.FileUtil;
-
 import com.google.common.collect.Lists;
-import com.peach.fileservice.AbstractFileStorageService;
+import com.peach.common.constant.PubCommonConst;
+import com.peach.fileservice.impl.AbstractFileStorageService;
 import com.peach.fileservice.config.FileProperties;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
 import com.qcloud.cos.auth.COSCredentials;
 import com.qcloud.cos.http.HttpProtocol;
-import com.qcloud.cos.model.PutObjectRequest;
-import com.qcloud.cos.model.PutObjectResult;
+import com.qcloud.cos.model.*;
 import com.qcloud.cos.region.Region;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Indexed;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URLDecoder;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Author Mr Shu
@@ -43,6 +39,8 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
     private final String bucketName;
 
+    private final String nginxProxy;
+
     public CosStorageImpl(FileProperties properties) {
         String accessKey = properties.getCos().getAccessKey();
         String secretKey = properties.getCos().getSecretKey();
@@ -53,6 +51,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
         config.setHttpProtocol(HttpProtocol.https);
         this.cosClient = new COSClient(crd,config);
         this.bucketName = properties.getCos().getBucketName();
+        this.nginxProxy = properties.getNginxProxy();
         log.info("cos init success ...");
     }
 
@@ -68,13 +67,13 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
     @Override
     public String upload(InputStream inputStream, String targetPath, String fileName) {
-        return upLoadInputStream(inputStream, targetPath, fileName);
+        return uploadInputStream(inputStream, targetPath, fileName);
     }
 
     @Override
     public String upload(String content, String targetPath, String fileName) {
         try (InputStream inputStream = new ByteArrayInputStream(content.getBytes())){
-            return upLoadInputStream(inputStream, targetPath, fileName);
+            return uploadInputStream(inputStream, targetPath, fileName);
         }catch (Exception e){
             log.error("upload file failed");
             return "";
@@ -88,7 +87,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
             return urlList;
         }
         for (File f : file) {
-            String url = upload(f, targetPath,FileUtil.getName(f));
+            String url = uploadFile(f, targetPath,FileUtil.getName(f));
             urlList.add(url);
         }
         return urlList;
@@ -96,12 +95,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
     @Override
     public String upload(File file, String targetPath, String fileName) {
-        try (InputStream inputStream = FileUtil.getInputStream(file)) {
-            return upLoadInputStream(inputStream, targetPath, fileName);
-        }catch (Exception e){
-            log.error("uplod file failed");
-            return "";
-        }
+        return uploadFile(file, targetPath, fileName);
     }
 
     @Override
@@ -115,15 +109,27 @@ public class CosStorageImpl extends AbstractFileStorageService {
         }catch (Exception ex){
             log.error("download file error！", ex);
         }
-        if (file != null){
-            return file.exists();
-        }
-        return false;
+
+        return FileUtil.exist(file);
     }
 
     @Override
     public InputStream getInputStream(String targetPath, String fileName) {
-        return null;
+        InputStream inputStream = null;
+        try {
+            String key;
+            String decodePath = URLDecoder.decode(targetPath, PubCommonConst.UTF_8);
+            if (decodePath.contains(fileName)){
+                key = decodePath;
+            }else {
+                decodePath = decodePath.endsWith(PATH_SEPARATOR) ? decodePath : decodePath + PATH_SEPARATOR;
+                key = decodePath + fileName;
+            }
+            inputStream = cosClient.getObject(bucketName, getOssKey(key)).getObjectContent();
+        } catch (UnsupportedEncodingException e) {
+            log.error("UnsupportedEncodingException"+e.getMessage(),e);
+        }
+        return inputStream;
     }
 
     @Override
@@ -150,7 +156,53 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
     @Override
     public boolean delete(String key) {
-        return false;
+        // 校验 key 是否含非法字符，不符合要求则直接返回 false
+        if (isHasIllegalChar(key)) {
+            log.warn("非法 key，禁止删除: {}", key);
+            return false;
+        }
+        boolean flag = true;
+        try {
+            key = removeUrlHost(key);
+            String nextMarker = null;
+            ObjectListing objectListing;
+
+            do {
+                // 查询 keys
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                        .withPrefix(handlerKeyPrefix(key))
+                        .withMarker(nextMarker);
+                objectListing = cosClient.listObjects(listObjectsRequest);
+
+                // 构建删除列表
+                List<DeleteObjectsRequest.KeyVersion> keys = objectListing.getObjectSummaries()
+                        .stream()
+                        .map(s -> new DeleteObjectsRequest.KeyVersion(s.getKey()))
+                        .collect(Collectors.toList());
+
+                if (!keys.isEmpty()) {
+                    List<String> keyList = keys.stream().map(DeleteObjectsRequest.KeyVersion::getKey).collect(Collectors.toList());
+                    try {
+                        log.info("即将删除 {} 个对象: {}", keys.size(), keyList);
+                        DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucketName)
+                                .withKeys(keys);
+                        cosClient.deleteObjects(deleteObjectsRequest);
+                        log.info("成功删除 {} 个对象", keys.size());
+                    } catch (Exception e) {
+                        flag = false;  // 只要删除失败，最终返回 false
+                        log.error("删除对象失败: {}", keyList, e);
+                    }
+                }
+
+                nextMarker = objectListing.getNextMarker();
+            } while (objectListing.isTruncated());
+
+            log.info("目录 [{}] 及其所有文件已删除完成", key);
+        } catch (Exception e) {
+            flag = false;
+            log.error("CosDeleteObject error！key: {}", key, e);
+        }
+        return flag;
     }
 
     @Override
@@ -173,8 +225,31 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
     }
 
+    /**
+     * 上传文件
+     * @param file
+     * @param targetPath
+     * @param fileName
+     * @return
+     */
+    protected String uploadFile(File file,String targetPath,String fileName){
+        try (InputStream inputStream = FileUtil.getInputStream(file)){
+            return uploadInputStream(inputStream,targetPath,fileName);
+        }catch (Exception ex){
+            log.error("upload file to cos failed");
+            return null;
+        }
+    }
 
-    private String upLoadInputStream(InputStream inputStream, String targetPath, String fileName) {
+
+    /**
+     * 上传文件
+     * @param inputStream
+     * @param targetPath
+     * @param fileName
+     * @return
+     */
+    protected String uploadInputStream(InputStream inputStream, String targetPath, String fileName) {
         String url = null;
         String localPath = targetPath.endsWith(PATH_SEPARATOR) ? targetPath : targetPath + PATH_SEPARATOR;
         String key = localPath + fileName;
@@ -188,7 +263,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
                 url = removeUrlHost(ossUrl);
             }
         } catch (Exception e) {
-            log.error("upload OSS error！", e);
+            log.error("upload file to cos failed！", e);
         }
         return url;
     }

@@ -1,7 +1,7 @@
 package com.peach.fileservice.controller;
 
 
-import com.peach.fileservice.AbstractFileStorageService;
+import com.peach.fileservice.impl.AbstractFileStorageService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;

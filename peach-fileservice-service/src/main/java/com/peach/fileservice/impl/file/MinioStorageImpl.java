@@ -1,13 +1,11 @@
-package com.peach.fileservice.impl;
+package com.peach.fileservice.impl.file;
 
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.peach.fileservice.AbstractFileStorageService;
+import com.peach.fileservice.impl.AbstractFileStorageService;
 import com.peach.fileservice.config.FileProperties;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Indexed;
@@ -39,11 +37,14 @@ public class MinioStorageImpl extends AbstractFileStorageService {
 
     private final String minioEndpoint;
 
+    private final String nginxProxy;
+
     public MinioStorageImpl(FileProperties properties) {
         String accessKey = properties.getMinio().getAccessKey();
         String secretKey = properties.getMinio().getSecretKey();
         String url = properties.getMinio().getUrl();
         this.bucketName = properties.getMinio().getBucketName();
+        this.nginxProxy = properties.getNginxProxy();
         this.minioEndpoint = url;
         this.minioClient = MinioClient.builder().endpoint(url)
                 .credentials(accessKey,secretKey).build();

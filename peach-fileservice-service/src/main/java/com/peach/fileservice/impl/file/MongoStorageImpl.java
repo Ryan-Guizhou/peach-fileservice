@@ -1,4 +1,4 @@
-package com.peach.fileservice.impl;
+package com.peach.fileservice.impl.file;
 
 import com.google.common.collect.Lists;
 import com.mongodb.client.MongoClient;
@@ -7,7 +7,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
-import com.peach.fileservice.AbstractFileStorageService;
+import com.peach.fileservice.impl.AbstractFileStorageService;
 import com.peach.fileservice.config.FileProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;

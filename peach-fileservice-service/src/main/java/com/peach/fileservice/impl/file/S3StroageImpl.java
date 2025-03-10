@@ -1,4 +1,4 @@
-package com.peach.fileservice.impl;
+package com.peach.fileservice.impl.file;
 
 import cn.hutool.core.io.FileUtil;
 import com.amazonaws.SdkClientException;
@@ -9,7 +9,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.collect.Lists;
-import com.peach.fileservice.AbstractFileStorageService;
+import com.peach.fileservice.impl.AbstractFileStorageService;
 import com.peach.fileservice.config.FileProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +43,8 @@ public class S3StroageImpl extends AbstractFileStorageService {
 
     private final Integer urlTakeSign;
 
+    private final String nginxProxy;
+
     public S3StroageImpl(FileProperties properties){
         String endpoint = properties.getS3().getEndpoint();
         String accessKey = properties.getS3().getAccessKey();
@@ -57,6 +59,7 @@ public class S3StroageImpl extends AbstractFileStorageService {
                 .build();
         this.bucketName = properties.getS3().getBucketName();
         this.urlTakeSign = properties.getS3().getUrlTakeSign();
+        this.nginxProxy = properties.getNginxProxy();
     }
 
     @Override
