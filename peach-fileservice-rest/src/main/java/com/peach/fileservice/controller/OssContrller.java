@@ -2,14 +2,13 @@ package com.peach.fileservice.controller;
 
 
 import com.peach.fileservice.impl.AbstractFileStorageService;
-
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,7 +27,7 @@ import java.util.Map;
 @Api(tags = "文件上传", value = "文件上传")
 public class OssContrller {
 
-    @Autowired
+    @Resource
     AbstractFileStorageService fileStorageService;
 
     @PostMapping()
@@ -42,8 +41,7 @@ public class OssContrller {
         }catch (Exception ex){
             throw new RuntimeException("上传文件失败");
         }
-          Map<String, String> props = new HashMap<>();
-        props.clear();
+        Map<String, String> props = new HashMap<>();
         props.put("msg","sucess");
         props.put("option","uploadFile");
         props.put("path",filePath);

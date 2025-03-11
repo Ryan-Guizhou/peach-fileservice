@@ -3,11 +3,11 @@ package com.peach.fileservice.controller;
 import com.peach.common.mail.EmailSendService;
 import com.peach.common.thead.ThreadPool;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,10 +23,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestEmail {
 
 
-    @Autowired
+    @Resource
     private EmailSendService emailService;
 
-    @Autowired
+    @Resource
     private ThreadPool threadPool;
 
     @PostMapping("/test")
