@@ -1,6 +1,8 @@
 package com.peach.fileservice.controller;
 
 import com.peach.common.response.Response;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Indexed;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,9 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Indexed
 @RestController
 @RequestMapping("/health")
+@Api(tags = "健康检查", value = "健康检查")
 public class HealthController {
 
     @GetMapping
+    @ApiOperation("健康检查")
     public Response health() {
         log.info("health check");
         return Response.success().setMsg("ok");

@@ -13,9 +13,12 @@ import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @Author Mr Shu
@@ -30,8 +33,13 @@ public class LocalStorageImpl extends AbstractFileStorageService {
 
     private final String nginxProxy;
 
+    private final String tempPath;
+
+    private static final String REGEX = "^[^?]+";
+
     public LocalStorageImpl(FileProperties fileProperties) {
         this.nginxProxy = fileProperties.getNginxProxy();
+        this.tempPath = fileProperties.getLocal().getTempPath();
     }
 
     @Override
@@ -81,7 +89,19 @@ public class LocalStorageImpl extends AbstractFileStorageService {
 
     @Override
     public boolean download(String targetPath, String localPath, String fileName) {
-        try(InputStream inputStream = new FileInputStream(targetPath)){
+        if (StringUtil.isBlank(targetPath) || StringUtil.isBlank(localPath) || StringUtil.isBlank(fileName)){
+            log.error("下载文件失败,下载参数错误");
+            return false;
+        }
+
+        InputStream inputStream = null;
+        try{
+            targetPath = URLDecoder.decode(targetPath, PubCommonConst.UTF_8);
+            targetPath = tempPath + PATH_SEPARATOR + targetPath;
+            Pattern pattern = Pattern.compile("^[^?]+");
+            Matcher matcher = pattern.matcher(targetPath);
+            targetPath = matcher.find() ? matcher.group() : targetPath;
+            inputStream = new FileInputStream(targetPath);
             if (inputStream == null){
                 return false;
             }
@@ -89,8 +109,16 @@ public class LocalStorageImpl extends AbstractFileStorageService {
             File file = FileUtil.writeFromStream(inputStream, localPath + fileName);
             return FileUtil.exist(file);
         }catch (Exception ex){
-            log.error("download file failed");
+            log.error("download file failed"+ex.getMessage(),ex);
             return false;
+        }finally {
+            try {
+                if (inputStream != null){
+                    inputStream.close();
+                }
+            } catch (IOException e) {
+                log.error("download file failed"+e.getMessage(),e);
+            }
         }
     }
 
@@ -229,6 +257,38 @@ public class LocalStorageImpl extends AbstractFileStorageService {
         }
         log.info("absolutePath key:" + key);
         return key;
+    }
+
+
+
+    /**
+     * 定义本地上传的逻辑，其他存储方式需要重写此方法
+     * @param inputStream
+     * @param targetPath
+     * @param fileName
+     * @return
+     */
+    protected String uploadInputStream(InputStream inputStream, String targetPath, String fileName) {
+        // 1、上传文件
+        String localPath = targetPath.endsWith(PATH_SEPARATOR) ?  targetPath : targetPath + PATH_SEPARATOR ;
+        String key = tempPath + PATH_SEPARATOR + localPath + fileName;
+
+        try {
+            File file = retryer.call(() -> {
+                log.info("尝试写入文件: {}", key);
+                return FileUtil.writeFromStream(inputStream, key);
+            });
+        } catch (Exception e) {
+            log.error("文件上传失败，重试 3 次仍然失败: {}", e.getMessage(), e);
+            return null;
+        }
+
+        try {
+            return localPath.replace(File.separator, PATH_SEPARATOR) + URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20") + "?timestamp=" + System.currentTimeMillis();
+        } catch (UnsupportedEncodingException e) {
+            log.error("UnsupportedEncodingException"+e.getMessage(),e);
+            throw new RuntimeException(e);
+        }
     }
 
 

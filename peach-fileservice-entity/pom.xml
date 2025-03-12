@@ -16,10 +16,6 @@
             <groupId>com.peach.cn</groupId>
             <artifactId>peach-fileservice-common</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.peach.cn</groupId>
-            <artifactId>pub-common</artifactId>
-        </dependency>
     </dependencies>
 
 </project>

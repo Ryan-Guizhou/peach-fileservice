@@ -62,6 +62,11 @@ public class FileProperties {
      */
     private S3Config s3;
 
+    /**
+     * 本地配置
+     */
+    private LocalConfig local;
+
 
     @Data
     public static class MinioConfig {
@@ -126,6 +131,13 @@ public class FileProperties {
         private String region;
 
         private Integer urlTakeSign;
+    }
+
+    @Data
+    public static class LocalConfig {
+
+        private String tempPath;
+
     }
 
 

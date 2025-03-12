@@ -30,14 +30,19 @@ public class OssContrller {
     @Resource
     AbstractFileStorageService fileStorageService;
 
+    private static final String targetFilePath = "/costest/demo/file";
+
+    private static final String localFilePath = System.getProperty("user.dir");
+
+
     @PostMapping()
-    @ApiOperation(value = "文件上传")
+    @ApiOperation(value = "cos文件上传")
     public Map upload(@RequestPart("file") MultipartFile file) throws IOException {
 
         String filePath = null;
         File targetFile =  convertMultipartFileToFile(file);
         try {
-            filePath = fileStorageService.upload(new FileInputStream(targetFile), "/data/file/test/213213", file.getOriginalFilename());
+            filePath = fileStorageService.upload(new FileInputStream(targetFile), targetFilePath, file.getOriginalFilename());
         }catch (Exception ex){
             throw new RuntimeException("上传文件失败");
         }
@@ -68,36 +73,27 @@ public class OssContrller {
     }
 
 
-    @GetMapping("/downloadFile")
+    @PostMapping("/downloadFile")
     @ApiOperation(value = "文件下载")
-    public Map upload(){
-
-
-        Map<String, String> props = new HashMap<>();
-//        if (flag){
-//            log.error("下载成功");
-//            props.put("path","下载成功");
-//        }
-        props.clear();
+    public Map downloadFile(String key){
+        boolean download = fileStorageService.download(key, localFilePath, "下载的文件.py");
+        Map<String, Object> props = new HashMap<>();
         props.put("msg","sucess");
-        props.put("option","uploadFile");
-        props.put("path","filePath");
+        props.put("download",download);
         return props;
     }
 
-    @DeleteMapping("/delete/{source}")
-    @ApiOperation(value = "文件下载")
-    public Map upload(@PathVariable("source") String source){
+    @DeleteMapping("/delete")
+    @ApiOperation(value = "文件删除")
+    public Map delete(String key){
 
-
-
-        fileStorageService.delete(source);
-
-        Map<String, String> props = new HashMap<>();
+        boolean isDelete = fileStorageService.delete(key);
+        Map<String, Object> props = new HashMap<>();
         props.clear();
         props.put("msg","sucess");
         props.put("option","delete");
         props.put("path",null);
+        props.put("isDelete",isDelete);
         return props;
     }
 }

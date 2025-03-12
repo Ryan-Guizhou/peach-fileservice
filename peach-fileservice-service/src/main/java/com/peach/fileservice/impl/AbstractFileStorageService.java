@@ -1,6 +1,10 @@
 package com.peach.fileservice.impl;
 
 import cn.hutool.core.io.FileUtil;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
 import com.peach.common.util.StringUtil;
 import com.peach.fileservice.DiskDO;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author Mr Shu
@@ -32,6 +37,14 @@ public abstract class AbstractFileStorageService{
     protected static final String PATH_SEPARATOR = "/";
 
     protected static final long EXPIRATION = 3600L * 1000 * 24 * 365 * 2;
+
+    // 创建重试器
+    protected static Retryer<File> retryer = RetryerBuilder.<File>newBuilder()
+            .retryIfResult(result -> result == null || !FileUtil.exist(result))  // 失败条件：返回 false 时重试
+            .retryIfException() // 任何异常都重试
+            .withStopStrategy(StopStrategies.stopAfterAttempt(3)) // 最多重试 3 次
+            .withWaitStrategy(WaitStrategies.fixedWait(10, TimeUnit.SECONDS)) // 每次重试间隔 2 秒
+            .build();
 
     /**
      * 替换url 中的签名信息
@@ -334,26 +347,17 @@ public abstract class AbstractFileStorageService{
         // 1、上传文件
         String localPath = targetPath.endsWith(PATH_SEPARATOR) ?  targetPath : targetPath + PATH_SEPARATOR ;
         String key = localPath + fileName;
-        File file = null;
-        for (int retryCount = 0; retryCount < 3; retryCount++) {
-            try {
-                file = FileUtil.writeFromStream(inputStream, key);
-                break;
-            } catch (Exception e) {
-                log.error("error, retrying..." + retryCount + 1);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ex) {
-                    log.error("error: "+e.getMessage());
-                }
-            }
-        }
 
-        // 2、生成访问的url
-        if (!FileUtil.exist(file)){
-            log.error("上传文件到本地失败");
+        try {
+            File file = retryer.call(() -> {
+                log.info("尝试写入文件: {}", key);
+                return FileUtil.writeFromStream(inputStream, key);
+            });
+        } catch (Exception e) {
+            log.error("文件上传失败，重试 3 次仍然失败: {}", e.getMessage(), e);
             return null;
         }
+
         try {
             return localPath.replace(File.separator, PATH_SEPARATOR) + URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20") + "?timestamp=" + System.currentTimeMillis();
         } catch (UnsupportedEncodingException e) {
@@ -361,4 +365,6 @@ public abstract class AbstractFileStorageService{
             throw new RuntimeException(e);
         }
     }
+
+
 }

@@ -2,6 +2,8 @@ package com.peach.fileservice.controller;
 
 import com.peach.common.mail.EmailSendService;
 import com.peach.common.thead.ThreadPool;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @RestController
 @RequestMapping("/mail")
+@Api(tags = "邮件测试", value = "邮件测试")
 public class TestEmail {
 
 
@@ -30,6 +33,7 @@ public class TestEmail {
     private ThreadPool threadPool;
 
     @PostMapping("/test")
+    @ApiOperation(value = "简单邮件发送")
     public void test() {
         try {
             emailService.sendSimpleMail("huanhuanshu48@gmail.com", "测试邮件", "测试邮件内容");
@@ -39,6 +43,7 @@ public class TestEmail {
     }
 
     @PostMapping("/pool")
+    @ApiOperation(value = "线程池测试")
     public void pool() {
         ExecutorService executorService = threadPool.newCachedThreadPool(TestEmail.class);
         AtomicInteger a = new AtomicInteger(0);
