@@ -1,5 +1,6 @@
 package com.peach.fileservice;
 
+import com.peach.common.generator.MapperGenerator;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -17,7 +18,7 @@ import java.io.Serializable;
  */
 @Data
 @Table(name = "PEACH_ATTACH")
-@ApiModel(description = "附件对象")
+@ApiModel(description = "附件对象模型")
 public class AttachDO implements Serializable {
 
     private static final long serialVersionUID = -3918404837627972195L;
@@ -76,12 +77,8 @@ public class AttachDO implements Serializable {
     @ApiModelProperty(value = "是否删除")
     private boolean isDeleted;
 
-//    public static void main(String[] args) {
-//        System.out.print(System.getProperty("user.dir"));
-////        System.out.print(MapperGenerator.genMapper(AttachDO.class));
-//        // 使用hutool工具类 获取当前类的路径
-//        String prefixPath = "使用绝对路径";
-//        MapperGenerator.genMapperToFile(AttachDO.class, "AttchDao",prefixPath);
-//    }
+    public static void main(String[] args) {
+        System.out.print(MapperGenerator.genMapper(AttachDO.class));
+    }
 
 }
