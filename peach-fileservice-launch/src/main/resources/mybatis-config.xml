@@ -4,7 +4,7 @@
     <settings>
         <setting name="defaultStatementTimeout" value="60"/>
         <setting name="logImpl" value="STDOUT_LOGGING" />
-        <setting name="logImpl" value="SLF4J" />
+<!--        <setting name="logImpl" value="SLF4J" />-->
         <setting name="callSettersOnNulls" value="true"/>
         <setting name="jdbcTypeForNull" value="NULL" />
     </settings>

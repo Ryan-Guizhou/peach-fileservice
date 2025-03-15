@@ -22,7 +22,10 @@
         </triggeringPolicy>
     </appender>
     <!-- 各个模块的日志设置 -->
-    <logger name="com.peach.security" level="ERROR" additivity="false">
+    <logger name="com.peach.security" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="com.peach.common" level="INFO" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
 
