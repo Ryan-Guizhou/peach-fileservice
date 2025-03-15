@@ -1,9 +1,12 @@
 package com.peach.fileservice.controller;
 
 import com.peach.common.anno.UserOperLog;
+import com.peach.common.constant.EncryptConstant;
 import com.peach.common.enums.ModuleEnum;
 import com.peach.common.enums.OptTypeEnum;
 import com.peach.common.response.Response;
+import com.peach.common.util.encrypt.EncryptAbstract;
+import com.peach.common.util.encrypt.EncryptFactory;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,30 @@ public class HealthController {
             optContent = "'health check:  params['+#p0.toString()+']'")
     public Response health(@PathVariable("name") String name) {
         log.info("health check");
-        return Response.success().setMsg("ok");
+        return Response.success().setData("ok");
+    }
+
+    @GetMapping("/demo")
+    @ApiOperation("加解密测试")
+    public String demo() throws Exception{
+        EncryptAbstract instance = EncryptFactory.getInstance(EncryptConstant.RSA);
+        String plaintext = "{\"id\":\"1\",\"name\":\"ryan\"}";
+        String encrypted = instance.encrypt(plaintext);
+        System.out.println("🔒 加密后: " + encrypted);
+        String decrypted = instance.decrypt(encrypted);
+        System.out.println("🔓 解密后: " + decrypted);
+
+        instance = EncryptFactory.getInstance(EncryptConstant.DES);
+        encrypted = instance.encrypt(plaintext);
+        System.out.println("🔒 加密后: " + encrypted);
+        decrypted = instance.decrypt(encrypted);
+        System.out.println("🔓 解密后: " + decrypted);
+
+        instance = EncryptFactory.getInstance(EncryptConstant.AES);
+        encrypted = instance.encrypt(plaintext);
+        System.out.println("🔒 加密后: " + encrypted);
+        decrypted = instance.decrypt(encrypted);
+        System.out.println("🔓 解密后: " + decrypted);
+        return "ok";
     }
 }
