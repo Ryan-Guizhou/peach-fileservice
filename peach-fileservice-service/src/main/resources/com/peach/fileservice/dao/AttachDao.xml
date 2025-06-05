@@ -5,28 +5,32 @@
         ID,                                               FILE_NAME,                                        FILE_PATH,                                        FILE_SIZE,
         ORIGINAL_FILE_NAME,                               CREATED_TIME,                                     MODIFIED_TIME,                                    CREATOR,
         CREATOR_NAME,                                     MODIFIER,                                         MODIFIER_NAME,                                    FILE_TYPE,
-        IS_DELETED
+        UPLOAD_TYPE,                                      STORE_TYPE,                                       IS_DELETED,                                       REF_COUNT
+
     </sql>
 
     <sql id="allColumnAlias">
         ID as id,                                         FILE_NAME as fileName,                            FILE_PATH as filePath,                            FILE_SIZE as fileSize,
         ORIGINAL_FILE_NAME as originalFileName,           CREATED_TIME as createdTime,                      MODIFIED_TIME as modifiedTime,                    CREATOR as creator,
-        CREATOR_NAME as CREATOR_NAME,                     MODIFIER as modifier,                             MODIFIER_NAME as modifierName,                    FILE_TYPE as fileType,
-        IS_DELETED as isDeleted
+        CREATOR_NAME as creatorName,                      MODIFIER as modifier,                             MODIFIER_NAME as modifierName,                    FILE_TYPE as fileType,
+        UPLOAD_TYPE as uploadType,                        STORE_TYPE as storeType,                          IS_DELETED as isDeleted,                          REF_COUNT as refCount
+
     </sql>
 
     <sql id="allColumnValue">
         #{id,jdbcType=VARCHAR},                 #{fileName,jdbcType=VARCHAR},           #{filePath,jdbcType=VARCHAR},           #{fileSize,jdbcType=VARCHAR},
         #{originalFileName,jdbcType=VARCHAR},   #{createdTime,jdbcType=VARCHAR},        #{modifiedTime,jdbcType=VARCHAR},       #{creator,jdbcType=VARCHAR},
-        #{CREATOR_NAME,jdbcType=VARCHAR},       #{modifier,jdbcType=VARCHAR},           #{modifierName,jdbcType=VARCHAR},       #{fileType,jdbcType=VARCHAR},
-        #{isDeleted,jdbcType=VARCHAR}
+        #{creatorName,jdbcType=VARCHAR},        #{modifier,jdbcType=VARCHAR},           #{modifierName,jdbcType=VARCHAR},       #{fileType,jdbcType=VARCHAR},
+        #{uploadType,jdbcType=VARCHAR},         #{storeType,jdbcType=VARCHAR},          #{isDeleted,jdbcType=INTEGER},          #{refCount,jdbcType=INTEGER}
+
     </sql>
 
     <sql id="itemAllColumnValue">
         #{item.id,jdbcType=VARCHAR},            #{item.fileName,jdbcType=VARCHAR},      #{item.filePath,jdbcType=VARCHAR},      #{item.fileSize,jdbcType=VARCHAR},
         #{item.originalFileName,jdbcType=VARCHAR},#{item.createdTime,jdbcType=VARCHAR},   #{item.modifiedTime,jdbcType=VARCHAR},  #{item.creator,jdbcType=VARCHAR},
-        #{item.CREATOR_NAME,jdbcType=VARCHAR},  #{item.modifier,jdbcType=VARCHAR},      #{item.modifierName,jdbcType=VARCHAR},  #{item.fileType,jdbcType=VARCHAR},
-        #{item.isDeleted,jdbcType=VARCHAR}
+        #{item.creatorName,jdbcType=VARCHAR},   #{item.modifier,jdbcType=VARCHAR},      #{item.modifierName,jdbcType=VARCHAR},  #{item.fileType,jdbcType=VARCHAR},
+        #{item.uploadType,jdbcType=VARCHAR},    #{item.storeType,jdbcType=VARCHAR},     #{item.isDeleted,jdbcType=INTEGER},     #{item.refCount,jdbcType=INTEGER}
+
     </sql>
 
     <sql id="allColumnSet">
@@ -52,8 +56,8 @@
             <if test="creator != null and creator != ''">
                 CREATOR = #{creator,jdbcType=VARCHAR},
             </if>
-            <if test="CREATOR_NAME != null and CREATOR_NAME != ''">
-                CREATOR_NAME = #{CREATOR_NAME,jdbcType=VARCHAR},
+            <if test="creatorName != null and creatorName != ''">
+                CREATOR_NAME = #{creatorName,jdbcType=VARCHAR},
             </if>
             <if test="modifier != null and modifier != ''">
                 MODIFIER = #{modifier,jdbcType=VARCHAR},
@@ -64,8 +68,17 @@
             <if test="fileType != null and fileType != ''">
                 FILE_TYPE = #{fileType,jdbcType=VARCHAR},
             </if>
+            <if test="uploadType != null and uploadType != ''">
+                UPLOAD_TYPE = #{uploadType,jdbcType=VARCHAR},
+            </if>
+            <if test="storeType != null and storeType != ''">
+                STORE_TYPE = #{storeType,jdbcType=VARCHAR},
+            </if>
             <if test="isDeleted != null">
-                IS_DELETED = #{isDeleted,jdbcType=VARCHAR},
+                IS_DELETED = #{isDeleted,jdbcType=INTEGER},
+            </if>
+            <if test="refCount != null">
+                REF_COUNT = #{refCount,jdbcType=INTEGER},
             </if>
         </trim>
     </sql>
@@ -93,7 +106,7 @@
             <if test="creator != null and creator != ''">
                 CREATOR,
             </if>
-            <if test="CREATOR_NAME != null and CREATOR_NAME != ''">
+            <if test="creatorName != null and creatorName != ''">
                 CREATOR_NAME,
             </if>
             <if test="modifier != null and modifier != ''">
@@ -105,8 +118,17 @@
             <if test="fileType != null and fileType != ''">
                 FILE_TYPE,
             </if>
+            <if test="uploadType != null and uploadType != ''">
+                UPLOAD_TYPE,
+            </if>
+            <if test="storeType != null and storeType != ''">
+                STORE_TYPE,
+            </if>
             <if test="isDeleted != null">
                 IS_DELETED,
+            </if>
+            <if test="refCount != null">
+                REF_COUNT,
             </if>
         </trim>
     </sql>
@@ -134,8 +156,8 @@
             <if test="creator != null and creator != ''">
                 #{creator,jdbcType=VARCHAR},
             </if>
-            <if test="CREATOR_NAME != null and CREATOR_NAME != ''">
-                #{CREATOR_NAME,jdbcType=VARCHAR},
+            <if test="creatorName != null and creatorName != ''">
+                #{creatorName,jdbcType=VARCHAR},
             </if>
             <if test="modifier != null and modifier != ''">
                 #{modifier,jdbcType=VARCHAR},
@@ -146,8 +168,17 @@
             <if test="fileType != null and fileType != ''">
                 #{fileType,jdbcType=VARCHAR},
             </if>
+            <if test="uploadType != null and uploadType != ''">
+                #{uploadType,jdbcType=VARCHAR},
+            </if>
+            <if test="storeType != null and storeType != ''">
+                #{storeType,jdbcType=VARCHAR},
+            </if>
             <if test="isDeleted != null">
-                #{isDeleted,jdbcType=VARCHAR},
+                #{isDeleted,jdbcType=INTEGER},
+            </if>
+            <if test="refCount != null">
+                #{refCount,jdbcType=INTEGER},
             </if>
         </trim>
     </sql>
@@ -177,8 +208,8 @@
         <if test="creator != null and creator != ''">
             AND CREATOR = #{creator,jdbcType=VARCHAR}
         </if>
-        <if test="CREATOR_NAME != null and CREATOR_NAME != ''">
-            AND CREATOR_NAME = #{CREATOR_NAME,jdbcType=VARCHAR}
+        <if test="creatorName != null and creatorName != ''">
+            AND CREATOR_NAME = #{creatorName,jdbcType=VARCHAR}
         </if>
         <if test="modifier != null and modifier != ''">
             AND MODIFIER = #{modifier,jdbcType=VARCHAR}
@@ -189,12 +220,21 @@
         <if test="fileType != null and fileType != ''">
             AND FILE_TYPE = #{fileType,jdbcType=VARCHAR}
         </if>
+        <if test="uploadType != null and uploadType != ''">
+            AND UPLOAD_TYPE = #{uploadType,jdbcType=VARCHAR}
+        </if>
+        <if test="storeType != null and storeType != ''">
+            AND STORE_TYPE = #{storeType,jdbcType=VARCHAR}
+        </if>
         <if test="isDeleted != null">
-            AND IS_DELETED = #{isDeleted,jdbcType=VARCHAR}
+            AND IS_DELETED = #{isDeleted,jdbcType=INTEGER}
+        </if>
+        <if test="refCount != null">
+            AND REF_COUNT = #{refCount,jdbcType=INTEGER}
         </if>
     </sql>
 
-    <insert id="insert" parameterType="com.peach.fileservice.AttachDO">
+    <insert id="insert" parameterType="com.peach.fileservice.entity.AttachDO">
         INSERT INTO PEACH_ATTACH (
         <include refid="allColumn" />
         ) VALUES (
@@ -202,7 +242,7 @@
         )
     </insert>
 
-    <insert id="batchInsert" parameterType="com.peach.fileservice.AttachDO">
+    <insert id="batchInsert" parameterType="com.peach.fileservice.entity.AttachDO">
         INSERT INTO PEACH_ATTACH (
         <include refid="allColumn" />
         ) VALUES
@@ -211,11 +251,12 @@
         </foreach>
     </insert>
 
-    <update id="update" parameterType="com.peach.fileservice.AttachDO">
-        UPDATE SET PEACH_ATTACH
+    <update id="update" parameterType="com.peach.fileservice.entity.AttachDO">
+        UPDATE PEACH_ATTACH SET
         <include refid="allColumnSet" />
-        WHERE
-        <include refid="allColumnCond" />
+        <where>
+            <include refid="allColumnCond" />
+        </where>
     </update>
 
     <delete id="delById" parameterType="string">
@@ -231,7 +272,7 @@
         </foreach>
     </delete>
 
-    <delete id="del" parameterType="com.peach.fileservice.AttachDO">
+    <delete id="del" parameterType="com.peach.fileservice.entity.AttachDO">
         DELETE FROM PEACH_ATTACH
         <where>
             <include refid="allColumnCond" />
@@ -244,14 +285,14 @@
         WHERE ID =  #{id,jdbcType=VARCHAR}
     </update>
 
-    <select id="selectById" parameterType="string" resultType="com.peach.fileservice.AttachDO">
+    <select id="selectById" parameterType="string" resultType="com.peach.fileservice.entity.AttachDO">
         SELECT
         <include refid="allColumnAlias" />
         FROM PEACH_ATTACH
         WHERE ID = #{value,jdbcType=VARCHAR}
     </select>
 
-    <select id="selectByIds" parameterType="java.util.List" resultType="com.peach.fileservice.AttachDO">
+    <select id="selectByIds" parameterType="java.util.List" resultType="com.peach.fileservice.entity.AttachDO">
         SELECT
         <include refid="allColumnAlias" />
         FROM PEACH_ATTACH
@@ -261,7 +302,7 @@
         </foreach>
     </select>
 
-    <select id="select" parameterType="com.peach.fileservice.AttachDO" resultType="com.peach.fileservice.AttachDO">
+    <select id="select" parameterType="com.peach.fileservice.entity.AttachDO" resultType="com.peach.fileservice.entity.AttachDO">
         SELECT
         <include refid="allColumnAlias" />
         FROM PEACH_ATTACH
@@ -270,7 +311,7 @@
         </where>
     </select>
 
-    <select id="count" parameterType="com.peach.fileservice.AttachDO" resultType="java.lang.Integer">
+    <select id="count" parameterType="com.peach.fileservice.entity.AttachDO" resultType="java.lang.Integer">
         SELECT COUNT(1)
         FROM PEACH_ATTACH
         <where>

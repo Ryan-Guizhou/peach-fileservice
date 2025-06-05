@@ -1,7 +1,6 @@
-package com.peach.fileservice;
+package com.peach.fileservice.entity;
 
 import com.peach.common.generator.MapperGenerator;
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -13,36 +12,35 @@ import java.io.Serializable;
 /**
  * @Author Mr Shu
  * @Version 1.0.0
- * @Description //TODO
+ * @Description 附件引用表 为了实现秒传设计 如果一个文件存在多个引用只删除对应的引用关系，不删除原始物理存储关系
  * @CreateTime 2024/10/9 18:26
  */
 @Data
-@Table(name = "PEACH_ATTACH")
-@ApiModel(description = "附件对象模型")
-public class AttachDO implements Serializable {
+@Table(name = "PEACH_ATTACH_REF")
+public class AttachRefDO implements Serializable {
 
-    private static final long serialVersionUID = -3918404837627972195L;
+    private static final long serialVersionUID = 1L;
 
     @Id
     @Column(name = "ID")
-    @ApiModelProperty(value = "用户ID")
+    @ApiModelProperty("主键")
     private String id;
 
-    @Column(name = "FILE_NAME")
-    @ApiModelProperty(value = "文件名称")
-    private String fileName;
+    @Column(name = "BUSINESS_ID")
+    @ApiModelProperty(value = "业务主键")
+    private String businessId;
 
-    @Column(name = "FILE_PATH")
-    @ApiModelProperty(value = "文件存储路径")
-    private String filePath;
+    @Column(name = "BUSINESS_CODE")
+    @ApiModelProperty(value = "业务模块编码")
+    private String businessCode;
 
-    @Column(name = "FILE_SIZE")
-    @ApiModelProperty(value = "文件大小")
-    private double fileSize;
+    @Column(name = "BUSINESS_NAME")
+    @ApiModelProperty(value = "业务模块名称")
+    private String businessName;
 
-    @Column(name = "ORIGINAL_FILE_NAME")
-    @ApiModelProperty(value = "完整的文件名称")
-    private String originalFileName;
+    @Column(name = "ATTACH_ID")
+    @ApiModelProperty(value = "附件ID")
+    private String attachId;
 
     @Column(name = "CREATED_TIME")
     @ApiModelProperty(value = "创建时间")
@@ -58,27 +56,21 @@ public class AttachDO implements Serializable {
 
     @Column(name = "CREATOR_NAME")
     @ApiModelProperty(value = "创建人名称")
-    private String CREATOR_NAME;
+    private String creatorName;
 
     @Column(name = "MODIFIER")
     @ApiModelProperty(value = "修改人")
     private String modifier;
 
-
     @Column(name = "MODIFIER_NAME")
     @ApiModelProperty(value = "修改人名称")
     private String modifierName;
 
-    @Column(name = "FILE_TYPE")
-    @ApiModelProperty(value = "文件类型")
-    private String fileType;
-
     @Column(name = "IS_DELETED")
     @ApiModelProperty(value = "是否删除")
-    private boolean isDeleted;
+    private Integer isDeleted;
 
     public static void main(String[] args) {
-        System.out.print(MapperGenerator.genMapper(AttachDO.class));
+        System.out.println(MapperGenerator.genMapper(AttachRefDO.class));
     }
-
 }

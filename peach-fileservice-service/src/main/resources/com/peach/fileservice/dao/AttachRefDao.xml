@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.peach.fileservice.dao.AttachRefDao">
+    <sql id="allColumn">
+        ID,                                               BUSINESS_ID,                                      BUSINESS_CODE,                                    BUSINESS_NAME,
+        ATTACH_ID,                                        CREATED_TIME,                                     MODIFIED_TIME,                                    CREATOR,
+        CREATOR_NAME,                                     MODIFIER,                                         MODIFIER_NAME,                                    IS_DELETED
+
+    </sql>
+
+    <sql id="allColumnAlias">
+        ID as id,                                         BUSINESS_ID as businessId,                        BUSINESS_CODE as businessCode,                    BUSINESS_NAME as businessName,
+        ATTACH_ID as attachId,                            CREATED_TIME as createdTime,                      MODIFIED_TIME as modifiedTime,                    CREATOR as creator,
+        CREATOR_NAME as creatorName,                      MODIFIER as modifier,                             MODIFIER_NAME as modifierName,                    IS_DELETED as isDeleted
+
+    </sql>
+
+    <sql id="allColumnValue">
+        #{id,jdbcType=INTEGER},                 #{businessId,jdbcType=VARCHAR},         #{businessCode,jdbcType=VARCHAR},       #{businessName,jdbcType=VARCHAR},
+        #{attachId,jdbcType=VARCHAR},           #{createdTime,jdbcType=VARCHAR},        #{modifiedTime,jdbcType=VARCHAR},       #{creator,jdbcType=VARCHAR},
+        #{creatorName,jdbcType=VARCHAR},        #{modifier,jdbcType=VARCHAR},           #{modifierName,jdbcType=VARCHAR},       #{isDeleted,jdbcType=INTEGER}
+
+    </sql>
+
+    <sql id="itemAllColumnValue">
+        #{item.id,jdbcType=INTEGER},            #{item.businessId,jdbcType=VARCHAR},    #{item.businessCode,jdbcType=VARCHAR},  #{item.businessName,jdbcType=VARCHAR},
+        #{item.attachId,jdbcType=VARCHAR},      #{item.createdTime,jdbcType=VARCHAR},   #{item.modifiedTime,jdbcType=VARCHAR},  #{item.creator,jdbcType=VARCHAR},
+        #{item.creatorName,jdbcType=VARCHAR},   #{item.modifier,jdbcType=VARCHAR},      #{item.modifierName,jdbcType=VARCHAR},  #{item.isDeleted,jdbcType=INTEGER}
+
+    </sql>
+
+    <sql id="allColumnSet">
+        <trim suffixOverrides=",">
+            <if test="businessId != null and businessId != ''">
+                BUSINESS_ID = #{businessId,jdbcType=VARCHAR},
+            </if>
+            <if test="businessCode != null and businessCode != ''">
+                BUSINESS_CODE = #{businessCode,jdbcType=VARCHAR},
+            </if>
+            <if test="businessName != null and businessName != ''">
+                BUSINESS_NAME = #{businessName,jdbcType=VARCHAR},
+            </if>
+            <if test="attachId != null and attachId != ''">
+                ATTACH_ID = #{attachId,jdbcType=VARCHAR},
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                CREATED_TIME = #{createdTime,jdbcType=VARCHAR},
+            </if>
+            <if test="modifiedTime != null and modifiedTime != ''">
+                MODIFIED_TIME = #{modifiedTime,jdbcType=VARCHAR},
+            </if>
+            <if test="creator != null and creator != ''">
+                CREATOR = #{creator,jdbcType=VARCHAR},
+            </if>
+            <if test="creatorName != null and creatorName != ''">
+                CREATOR_NAME = #{creatorName,jdbcType=VARCHAR},
+            </if>
+            <if test="modifier != null and modifier != ''">
+                MODIFIER = #{modifier,jdbcType=VARCHAR},
+            </if>
+            <if test="modifierName != null and modifierName != ''">
+                MODIFIER_NAME = #{modifierName,jdbcType=VARCHAR},
+            </if>
+            <if test="isDeleted != null">
+                IS_DELETED = #{isDeleted,jdbcType=INTEGER},
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="updateSelectiveColumn">
+        <trim suffixOverrides=",">
+            <if test="businessId != null and businessId != ''">
+                BUSINESS_ID,
+            </if>
+            <if test="businessCode != null and businessCode != ''">
+                BUSINESS_CODE,
+            </if>
+            <if test="businessName != null and businessName != ''">
+                BUSINESS_NAME,
+            </if>
+            <if test="attachId != null and attachId != ''">
+                ATTACH_ID,
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                CREATED_TIME,
+            </if>
+            <if test="modifiedTime != null and modifiedTime != ''">
+                MODIFIED_TIME,
+            </if>
+            <if test="creator != null and creator != ''">
+                CREATOR,
+            </if>
+            <if test="creatorName != null and creatorName != ''">
+                CREATOR_NAME,
+            </if>
+            <if test="modifier != null and modifier != ''">
+                MODIFIER,
+            </if>
+            <if test="modifierName != null and modifierName != ''">
+                MODIFIER_NAME,
+            </if>
+            <if test="isDeleted != null">
+                IS_DELETED,
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="updateSelectiveValue">
+        <trim suffixOverrides=",">
+            <if test="businessId != null and businessId != ''">
+                #{businessId,jdbcType=VARCHAR},
+            </if>
+            <if test="businessCode != null and businessCode != ''">
+                #{businessCode,jdbcType=VARCHAR},
+            </if>
+            <if test="businessName != null and businessName != ''">
+                #{businessName,jdbcType=VARCHAR},
+            </if>
+            <if test="attachId != null and attachId != ''">
+                #{attachId,jdbcType=VARCHAR},
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                #{createdTime,jdbcType=VARCHAR},
+            </if>
+            <if test="modifiedTime != null and modifiedTime != ''">
+                #{modifiedTime,jdbcType=VARCHAR},
+            </if>
+            <if test="creator != null and creator != ''">
+                #{creator,jdbcType=VARCHAR},
+            </if>
+            <if test="creatorName != null and creatorName != ''">
+                #{creatorName,jdbcType=VARCHAR},
+            </if>
+            <if test="modifier != null and modifier != ''">
+                #{modifier,jdbcType=VARCHAR},
+            </if>
+            <if test="modifierName != null and modifierName != ''">
+                #{modifierName,jdbcType=VARCHAR},
+            </if>
+            <if test="isDeleted != null">
+                #{isDeleted,jdbcType=INTEGER},
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="allColumnCond">
+        <if test="id != null">
+            AND ID = #{id,jdbcType=VARCHAR}
+        </if>
+        <if test="businessId != null and businessId != ''">
+            AND BUSINESS_ID = #{businessId,jdbcType=VARCHAR}
+        </if>
+        <if test="businessCode != null and businessCode != ''">
+            AND BUSINESS_CODE = #{businessCode,jdbcType=VARCHAR}
+        </if>
+        <if test="businessName != null and businessName != ''">
+            AND BUSINESS_NAME = #{businessName,jdbcType=VARCHAR}
+        </if>
+        <if test="attachId != null and attachId != ''">
+            AND ATTACH_ID = #{attachId,jdbcType=VARCHAR}
+        </if>
+        <if test="createdTime != null and createdTime != ''">
+            AND CREATED_TIME = #{createdTime,jdbcType=VARCHAR}
+        </if>
+        <if test="modifiedTime != null and modifiedTime != ''">
+            AND MODIFIED_TIME = #{modifiedTime,jdbcType=VARCHAR}
+        </if>
+        <if test="creator != null and creator != ''">
+            AND CREATOR = #{creator,jdbcType=VARCHAR}
+        </if>
+        <if test="creatorName != null and creatorName != ''">
+            AND CREATOR_NAME = #{creatorName,jdbcType=VARCHAR}
+        </if>
+        <if test="modifier != null and modifier != ''">
+            AND MODIFIER = #{modifier,jdbcType=VARCHAR}
+        </if>
+        <if test="modifierName != null and modifierName != ''">
+            AND MODIFIER_NAME = #{modifierName,jdbcType=VARCHAR}
+        </if>
+        <if test="isDeleted != null">
+            AND IS_DELETED = #{isDeleted,jdbcType=INTEGER}
+        </if>
+    </sql>
+
+    <insert id="insert" parameterType="com.peach.fileservice.entity.AttachRefDO">
+        INSERT INTO PEACH_ATTACH_REF (
+        <include refid="allColumn" />
+        ) VALUES (
+        <include refid="allColumnValue" />
+        )
+    </insert>
+
+    <insert id="batchInsert" parameterType="com.peach.fileservice.entity.AttachRefDO">
+        INSERT INTO PEACH_ATTACH_REF (
+        <include refid="allColumn" />
+        ) VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            (<include refid="itemAllColumnValue"/>)
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.peach.fileservice.entity.AttachRefDO">
+        UPDATE PEACH_ATTACH_REF SET
+        <include refid="allColumnSet" />
+        <where>
+            <include refid="allColumnCond" />
+        </where>
+    </update>
+
+    <delete id="delById" parameterType="string">
+        DELETE FROM PEACH_ATTACH_REF
+        WHERE ID = #{value,jdbcType=VARCHAR}
+    </delete>
+
+    <delete id="delByIds" parameterType="java.util.List">
+        DELETE FROM PEACH_ATTACH_REF
+        WHERE ID IN
+        <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=VARCHAR}
+        </foreach>
+    </delete>
+
+    <delete id="del" parameterType="com.peach.fileservice.entity.AttachRefDO">
+        DELETE FROM PEACH_ATTACH_REF
+        <where>
+            <include refid="allColumnCond" />
+        </where>
+    </delete>
+
+    <update id="updateById" parameterType="java.lang.String">
+        UPDATE PEACH_ATTACH_REF SET
+        <include refid="allColumnSet" />
+        WHERE ID =  #{id,jdbcType=VARCHAR}
+    </update>
+
+    <select id="selectById" parameterType="string" resultType="com.peach.fileservice.entity.AttachRefDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH_REF
+        WHERE ID = #{value,jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectByIds" parameterType="java.util.List" resultType="com.peach.fileservice.entity.AttachRefDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH_REF
+        WHERE ID IN
+        <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=VARCHAR}
+        </foreach>
+    </select>
+
+    <select id="select" parameterType="com.peach.fileservice.entity.AttachRefDO" resultType="com.peach.fileservice.entity.AttachRefDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH_REF
+        <where>
+            <include refid="allColumnCond" />
+        </where>
+    </select>
+
+    <select id="count" parameterType="com.peach.fileservice.entity.AttachRefDO" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM PEACH_ATTACH_REF
+        <where>
+            <include refid="allColumnCond" />
+        </where>
+    </select>
+
+    <select id="selectByQO" resultType="com.peach.fileservice.entity.AttachRefDO" parameterType="com.peach.fileservice.qo.AttachRefQO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH_REF
+        <where>
+            <if test="attachId != null and attachId != ''">
+                AND ATTACH_ID = #{attachId,jdbcType=VARCHAR}
+            </if>
+            <if test="attachIdList != null and attachIdList.size() > 0">
+                AND ATTACH_ID IN
+                <foreach collection="attachIdList" index="index" item="attachId" open="(" separator="," close=")">
+                    #{attachId,jdbcType=IVARCHAR}
+                </foreach>
+            </if>
+        </where>
+
+    </select>
+</mapper>

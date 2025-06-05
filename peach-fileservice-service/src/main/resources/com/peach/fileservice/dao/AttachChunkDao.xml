@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.peach.fileservice.dao.AttachChunkDao">
+    <sql id="allColumn">
+        ID,                                               UPLOAD_ID,                                        FILE_MD5,                                         CHUNK_INDEX,
+        CHUNK_SIZE,                                       TOTAL_CHUNKS,                                     FILE_NAME,                                        FILE_SIZE,
+        STORAGE_PATH,                                     IS_MERGED
+    </sql>
+
+    <sql id="allColumnAlias">
+        ID as id,                                         UPLOAD_ID as uploadId,                            FILE_MD5 as fileMd5,                              CHUNK_INDEX as chunkIndex,
+        CHUNK_SIZE as chunkSize,                          TOTAL_CHUNKS as totalChunks,                      FILE_NAME as fileName,                            FILE_SIZE as fileSize,
+        STORAGE_PATH as storagePath,                      IS_MERGED as isMerged
+    </sql>
+
+    <sql id="allColumnValue">
+        #{id,jdbcType=VARCHAR},                 #{uploadId,jdbcType=VARCHAR},           #{fileMd5,jdbcType=VARCHAR},            #{chunkIndex,jdbcType=INTEGER},
+        #{chunkSize,jdbcType=BIGINT},           #{totalChunks,jdbcType=INTEGER},        #{fileName,jdbcType=VARCHAR},           #{fileSize,jdbcType=BIGINT},
+        #{storagePath,jdbcType=VARCHAR},        #{isMerged,jdbcType=INTEGER}
+    </sql>
+
+    <sql id="itemAllColumnValue">
+        #{item.id,jdbcType=VARCHAR},            #{item.uploadId,jdbcType=VARCHAR},      #{item.fileMd5,jdbcType=VARCHAR},       #{item.chunkIndex,jdbcType=INTEGER},
+        #{item.chunkSize,jdbcType=BIGINT},      #{item.totalChunks,jdbcType=INTEGER},   #{item.fileName,jdbcType=VARCHAR},      #{item.fileSize,jdbcType=BIGINT},
+        #{item.storagePath,jdbcType=VARCHAR},   #{item.isMerged,jdbcType=INTEGER}
+    </sql>
+
+    <sql id="allColumnSet">
+        <trim suffixOverrides=",">
+            <if test="uploadId != null and uploadId != ''">
+                UPLOAD_ID = #{uploadId,jdbcType=VARCHAR},
+            </if>
+            <if test="fileMd5 != null and fileMd5 != ''">
+                FILE_MD5 = #{fileMd5,jdbcType=VARCHAR},
+            </if>
+            <if test="chunkIndex != null">
+                CHUNK_INDEX = #{chunkIndex,jdbcType=INTEGER},
+            </if>
+            <if test="chunkSize != null">
+                CHUNK_SIZE = #{chunkSize,jdbcType=BIGINT},
+            </if>
+            <if test="totalChunks != null">
+                TOTAL_CHUNKS = #{totalChunks,jdbcType=INTEGER},
+            </if>
+            <if test="fileName != null and fileName != ''">
+                FILE_NAME = #{fileName,jdbcType=VARCHAR},
+            </if>
+            <if test="fileSize != null">
+                FILE_SIZE = #{fileSize,jdbcType=BIGINT},
+            </if>
+            <if test="storagePath != null and storagePath != ''">
+                STORAGE_PATH = #{storagePath,jdbcType=VARCHAR},
+            </if>
+            <if test="isMerged != null">
+                IS_MERGED = #{isMerged,jdbcType=INTEGER},
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="updateSelectiveColumn">
+        <trim suffixOverrides=",">
+            <if test="uploadId != null and uploadId != ''">
+                UPLOAD_ID,
+            </if>
+            <if test="fileMd5 != null and fileMd5 != ''">
+                FILE_MD5,
+            </if>
+            <if test="chunkIndex != null">
+                CHUNK_INDEX,
+            </if>
+            <if test="chunkSize != null">
+                CHUNK_SIZE,
+            </if>
+            <if test="totalChunks != null">
+                TOTAL_CHUNKS,
+            </if>
+            <if test="fileName != null and fileName != ''">
+                FILE_NAME,
+            </if>
+            <if test="fileSize != null">
+                FILE_SIZE,
+            </if>
+            <if test="storagePath != null and storagePath != ''">
+                STORAGE_PATH,
+            </if>
+            <if test="isMerged != null">
+                IS_MERGED,
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="updateSelectiveValue">
+        <trim suffixOverrides=",">
+            <if test="uploadId != null and uploadId != ''">
+                #{uploadId,jdbcType=VARCHAR},
+            </if>
+            <if test="fileMd5 != null and fileMd5 != ''">
+                #{fileMd5,jdbcType=VARCHAR},
+            </if>
+            <if test="chunkIndex != null">
+                #{chunkIndex,jdbcType=INTEGER},
+            </if>
+            <if test="chunkSize != null">
+                #{chunkSize,jdbcType=BIGINT},
+            </if>
+            <if test="totalChunks != null">
+                #{totalChunks,jdbcType=INTEGER},
+            </if>
+            <if test="fileName != null and fileName != ''">
+                #{fileName,jdbcType=VARCHAR},
+            </if>
+            <if test="fileSize != null">
+                #{fileSize,jdbcType=BIGINT},
+            </if>
+            <if test="storagePath != null and storagePath != ''">
+                #{storagePath,jdbcType=VARCHAR},
+            </if>
+            <if test="isMerged != null">
+                #{isMerged,jdbcType=INTEGER},
+            </if>
+        </trim>
+    </sql>
+
+    <sql id="allColumnCond">
+        <if test="id != null and id != ''">
+            AND ID = #{id,jdbcType=VARCHAR}
+        </if>
+        <if test="uploadId != null and uploadId != ''">
+            AND UPLOAD_ID = #{uploadId,jdbcType=VARCHAR}
+        </if>
+        <if test="fileMd5 != null and fileMd5 != ''">
+            AND FILE_MD5 = #{fileMd5,jdbcType=VARCHAR}
+        </if>
+        <if test="chunkIndex != null">
+            AND CHUNK_INDEX = #{chunkIndex,jdbcType=INTEGER}
+        </if>
+        <if test="chunkSize != null">
+            AND CHUNK_SIZE = #{chunkSize,jdbcType=BIGINT}
+        </if>
+        <if test="totalChunks != null">
+            AND TOTAL_CHUNKS = #{totalChunks,jdbcType=INTEGER}
+        </if>
+        <if test="fileName != null and fileName != ''">
+            AND FILE_NAME = #{fileName,jdbcType=VARCHAR}
+        </if>
+        <if test="fileSize != null">
+            AND FILE_SIZE = #{fileSize,jdbcType=BIGINT}
+        </if>
+        <if test="storagePath != null and storagePath != ''">
+            AND STORAGE_PATH = #{storagePath,jdbcType=VARCHAR}
+        </if>
+        <if test="isMerged != null">
+            AND IS_MERGED = #{isMerged,jdbcType=INTEGER}
+        </if>
+    </sql>
+
+    <insert id="insert" parameterType="com.peach.fileservice.entity.AttachChunkDO">
+        INSERT INTO PEACH_ATTACH_CHUNK (
+        <include refid="allColumn" />
+        ) VALUES (
+        <include refid="allColumnValue" />
+        )
+    </insert>
+
+    <insert id="batchInsert" parameterType="com.peach.fileservice.entity.AttachChunkDO">
+        INSERT INTO PEACH_ATTACH_CHUNK (
+        <include refid="allColumn" />
+        ) VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            (<include refid="itemAllColumnValue"/>)
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.peach.fileservice.entity.AttachChunkDO">
+        UPDATE PEACH_ATTACH_CHUNK SET
+        <include refid="allColumnSet" />
+        <where>
+            <include refid="allColumnCond" />
+        </where>
+    </update>
+
+    <delete id="delById" parameterType="string">
+        DELETE FROM PEACH_ATTACH_CHUNK
+        WHERE ID = #{value,jdbcType=VARCHAR}
+    </delete>
+
+    <delete id="delByIds" parameterType="java.util.List">
+        DELETE FROM PEACH_ATTACH_CHUNK
+        WHERE ID IN
+        <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=VARCHAR}
+        </foreach>
+    </delete>
+
+    <delete id="del" parameterType="com.peach.fileservice.entity.AttachChunkDO">
+        DELETE FROM PEACH_ATTACH_CHUNK
+        <where>
+            <include refid="allColumnCond" />
+        </where>
+    </delete>
+
+    <update id="updateById" parameterType="java.lang.String">
+        UPDATE PEACH_ATTACH_CHUNK SET
+        <include refid="allColumnSet" />
+        WHERE ID =  #{id,jdbcType=VARCHAR}
+    </update>
+
+    <select id="selectById" parameterType="string" resultType="com.peach.fileservice.entity.AttachChunkDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH_CHUNK
+        WHERE ID = #{value,jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectByIds" parameterType="java.util.List" resultType="com.peach.fileservice.entity.AttachChunkDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH_CHUNK
+        WHERE ID IN
+        <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+            #{id,jdbcType=VARCHAR}
+        </foreach>
+    </select>
+
+    <select id="select" parameterType="com.peach.fileservice.entity.AttachChunkDO" resultType="com.peach.fileservice.entity.AttachChunkDO">
+        SELECT
+        <include refid="allColumnAlias" />
+        FROM PEACH_ATTACH_CHUNK
+        <where>
+            <include refid="allColumnCond" />
+        </where>
+    </select>
+
+    <select id="count" parameterType="com.peach.fileservice.entity.AttachChunkDO" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM PEACH_ATTACH_CHUNK
+        <where>
+            <include refid="allColumnCond" />
+        </where>
+    </select>
+</mapper>

@@ -24,7 +24,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/test/oss")
-@Api(tags = "文件上传", value = "文件上传")
+@Api(tags = "ossContrller",value = "存储测试")
 public class OssContrller {
 
     @Resource
