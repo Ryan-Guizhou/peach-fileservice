@@ -3,22 +3,28 @@ package com.peach.fileservice.impl.file;
 import cn.hutool.core.io.FileUtil;
 import com.google.common.collect.Lists;
 import com.peach.common.constant.PubCommonConst;
-import com.peach.fileservice.impl.AbstractFileStorageService;
 import com.peach.fileservice.config.FileProperties;
+import com.peach.fileservice.impl.AbstractFileStorageService;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
 import com.qcloud.cos.auth.COSCredentials;
 import com.qcloud.cos.http.HttpProtocol;
-import com.qcloud.cos.model.*;
+import com.qcloud.cos.model.DeleteObjectsRequest;
+import com.qcloud.cos.model.ListObjectsRequest;
+import com.qcloud.cos.model.ObjectListing;
+import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.region.Region;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Indexed;
-import java.io.*;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -170,6 +176,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
             do {
                 // 查询 keys
                 ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                        .withBucketName(bucketName)
                         .withPrefix(handlerKeyPrefix(key))
                         .withMarker(nextMarker);
                 objectListing = cosClient.listObjects(listObjectsRequest);
@@ -263,7 +270,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
                 url = removeUrlHost(ossUrl);
             }
         } catch (Exception e) {
-            log.error("upload file to cos failed！", e);
+            log.error("upload file to cos failed！"+e.getMessage(), e);
         }
         return url;
     }

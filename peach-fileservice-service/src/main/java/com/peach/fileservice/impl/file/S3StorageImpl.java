@@ -35,7 +35,7 @@ import java.util.List;
 @Indexed
 @Component
 @ConditionalOnProperty(prefix = "file-storage", name = "type", havingValue = "s3")
-public class S3StroageImpl extends AbstractFileStorageService {
+public class S3StorageImpl extends AbstractFileStorageService {
 
     private final AmazonS3 s3Client;
 
@@ -45,7 +45,7 @@ public class S3StroageImpl extends AbstractFileStorageService {
 
     private final String nginxProxy;
 
-    public S3StroageImpl(FileProperties properties){
+    public S3StorageImpl(FileProperties properties){
         String endpoint = properties.getS3().getEndpoint();
         String accessKey = properties.getS3().getAccessKey();
         String secretKey = properties.getS3().getSecretKey();

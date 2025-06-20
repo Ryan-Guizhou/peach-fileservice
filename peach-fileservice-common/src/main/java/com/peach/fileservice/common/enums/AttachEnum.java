@@ -1,4 +1,4 @@
-package com.peach.fileservice.enums;
+package com.peach.fileservice.common.enums;
 
 import java.util.Arrays;
 import java.util.HashMap;
