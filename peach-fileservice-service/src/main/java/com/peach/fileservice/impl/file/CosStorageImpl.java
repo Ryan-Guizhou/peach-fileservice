@@ -10,10 +10,7 @@ import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
 import com.qcloud.cos.auth.COSCredentials;
 import com.qcloud.cos.http.HttpProtocol;
-import com.qcloud.cos.model.DeleteObjectsRequest;
-import com.qcloud.cos.model.ListObjectsRequest;
-import com.qcloud.cos.model.ObjectListing;
-import com.qcloud.cos.model.PutObjectResult;
+import com.qcloud.cos.model.*;
 import com.qcloud.cos.region.Region;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -63,12 +60,66 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
     @Override
     public boolean copyDir(String sourceDir, String targetDir) {
-        return false;
+        try {
+            sourceDir = handlerKeyPrefix(sourceDir);
+            targetDir = handlerKeyPrefix(targetDir);
+
+            ObjectListing objectListing;
+            String nextMarker = null;
+
+            do {
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                        .withBucketName(bucketName)
+                        .withPrefix(sourceDir)
+                        .withMarker(nextMarker);
+
+                objectListing = cosClient.listObjects(listObjectsRequest);
+
+                for (COSObjectSummary summary : objectListing.getObjectSummaries()) {
+                    String sourceKey = summary.getKey();
+                    String relativeKey = sourceKey.substring(sourceDir.length());
+                    String targetKey = targetDir + relativeKey;
+                    cosClient.copyObject(bucketName, sourceKey, bucketName, targetKey);
+                }
+
+                nextMarker = objectListing.getNextMarker();
+            } while (objectListing.isTruncated());
+            return true;
+        } catch (Exception e) {
+            log.error("copyDir error! sourceDir={}, targetDir={}", sourceDir, targetDir, e);
+            return false;
+        }
     }
 
     @Override
     public boolean downDir(String sourceDir, String localDir) {
-        return false;
+        try {
+            sourceDir = handlerKeyPrefix(sourceDir);
+            String nextMarker = null;
+            ObjectListing objectListing;
+
+            do {
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                        .withBucketName(bucketName)
+                        .withPrefix(sourceDir)
+                        .withMarker(nextMarker);
+
+                objectListing = cosClient.listObjects(listObjectsRequest);
+
+                for (COSObjectSummary  summary : objectListing.getObjectSummaries()) {
+                    String key = summary.getKey();
+                    String relativePath = key.substring(sourceDir.length());
+                    InputStream inputStream = cosClient.getObject(bucketName, key).getObjectContent();
+                    File localFile = new File(localDir, relativePath);
+                    FileUtil.writeFromStream(inputStream, localFile);
+                }
+                nextMarker = objectListing.getNextMarker();
+            } while (objectListing.isTruncated());
+            return true;
+        } catch (Exception e) {
+            log.error("downDir error! sourceDir={}, localDir={}", sourceDir, localDir, e);
+            return false;
+        }
     }
 
     @Override
@@ -214,12 +265,27 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
     @Override
     public boolean copyFile(String currentPath, String targetPath) {
-        return false;
+        try {
+            currentPath = handlerKeyPrefix(currentPath);
+            targetPath = handlerKeyPrefix(targetPath);
+            cosClient.copyObject(bucketName, currentPath, bucketName, targetPath);
+            return true;
+        } catch (Exception e) {
+            log.error("copyFile error! currentPath={}, targetPath={}", currentPath, targetPath, e);
+            return false;
+        }
     }
 
     @Override
     public String getUrlByKey(String key) {
-        return "";
+        try {
+            key = handlerKeyPrefix(URLDecoder.decode(key, "UTF-8"));
+            Date expiration = new Date(System.currentTimeMillis() + EXPIRATION); // 可配置默认值
+            return cosClient.generatePresignedUrl(bucketName, key, expiration).toString();
+        } catch (Exception e) {
+            log.error("getUrlByKey error! key={}", key, e);
+            return "";
+        }
     }
 
     @Override
@@ -229,7 +295,14 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
     @Override
     public void setPublicReadAcl(String path) {
-
+        try {
+            String key = handlerKeyPrefix(path);
+            key = key.endsWith("/") ? key.substring(0, key.length() - 1) : key; // 去掉结尾/，避免设置目录无效
+            cosClient.setObjectAcl(bucketName, getOssKey(key), com.qcloud.cos.model.CannedAccessControlList.PublicRead);
+            log.info("已设置对象 [{}] 为 PublicRead", key);
+        } catch (Exception e) {
+            log.error("设置对象权限失败 path: {}", path, e);
+        }
     }
 
     /**
@@ -268,6 +341,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
                 Date expiration = new Date(System.currentTimeMillis() + EXPIRATION);
                 String ossUrl = cosClient.generatePresignedUrl(bucketName, getOssKey(key), expiration).toString();
                 url = removeUrlHost(ossUrl);
+                setPublicReadAcl(url);
             }
         } catch (Exception e) {
             log.error("upload file to cos failed！"+e.getMessage(), e);

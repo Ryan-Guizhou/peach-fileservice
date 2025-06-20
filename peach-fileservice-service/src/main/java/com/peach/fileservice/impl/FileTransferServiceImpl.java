@@ -7,6 +7,7 @@ import com.peach.common.util.StringUtil;
 import com.peach.fileservice.ChunkUploadFile;
 import com.peach.fileservice.api.IAttachRefService;
 import com.peach.fileservice.api.IAttachService;
+import com.peach.fileservice.api.IFileTransferService;
 import com.peach.fileservice.entity.AttachDO;
 import com.peach.fileservice.entity.AttachRefDO;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ import javax.annotation.Resource;
 @Slf4j
 @Indexed
 @Service
-public class FileTransferServiceImpl{
+public class FileTransferServiceImpl implements IFileTransferService {
 
     @Resource
     private IAttachService attachService;
@@ -37,6 +38,7 @@ public class FileTransferServiceImpl{
     private AbstractFileStorageService fileStorageService;
 
 
+    @Override
     public Response upload(ChunkUploadFile chunkUploadFile, AttachDO attachDO, boolean insertAttach, boolean insertAttachRef) {
         Integer chunks = chunkUploadFile.getChunks();
 

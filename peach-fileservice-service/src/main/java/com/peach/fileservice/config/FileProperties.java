@@ -1,19 +1,9 @@
 package com.peach.fileservice.config;
 
-import com.aliyun.oss.OSSClient;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.peach.common.util.StringUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
-
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * @Author Mr Shu
@@ -66,6 +56,12 @@ public class FileProperties {
      * 本地配置
      */
     private LocalConfig local;
+
+    /**
+     * 公共的上传地址
+     */
+    private String pubDirPrefix;
+
 
 
     @Data
