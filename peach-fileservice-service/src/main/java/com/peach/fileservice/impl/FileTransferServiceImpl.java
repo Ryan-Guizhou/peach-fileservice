@@ -2,7 +2,7 @@ package com.peach.fileservice.impl;
 
 import com.peach.common.constant.PubCommonConst;
 import com.peach.common.response.Response;
-import com.peach.common.util.IDGeneratorUtil;
+import com.peach.common.util.IDGenerator;
 import com.peach.common.util.StringUtil;
 import com.peach.fileservice.ChunkUploadFile;
 import com.peach.fileservice.api.IAttachRefService;
@@ -56,7 +56,7 @@ public class FileTransferServiceImpl implements IFileTransferService {
                 // 插入
                 existAttchDO = new AttachDO();
                 BeanUtils.copyProperties(attachDO, existAttchDO);
-                existAttchDO.setId(IDGeneratorUtil.UUID());
+                existAttchDO.setId(IDGenerator.UUID());
                 attachService.insertAttachDO(existAttchDO);
             }else {
                 // 修改
@@ -67,7 +67,7 @@ public class FileTransferServiceImpl implements IFileTransferService {
         // 如果需要插入附件引用信息
         if (insertAttachRef) {
             AttachRefDO attachRefDO = new AttachRefDO();
-            attachRefDO.setId(IDGeneratorUtil.UUID());
+            attachRefDO.setId(IDGenerator.UUID());
 //            attachRefDO.setBusinessId();
 //            attachRefDO.setBusinessCode();
 //            attachRefDO.setBusinessName();

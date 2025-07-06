@@ -9,7 +9,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.collect.Lists;
-import com.peach.common.constant.PubCommonConst;
 import com.peach.common.util.StringUtil;
 import com.peach.fileservice.common.constant.FileConstant;
 import com.peach.fileservice.config.FileProperties;
@@ -21,10 +20,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Indexed;
 
 import java.io.*;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -32,13 +29,13 @@ import java.util.List;
  * @Author Mr Shu
  * @Version 1.0.0
  * @Description //TODO
- * @CreateTime 2024/10/9 16:38
+ * @CreateTime 2025/6/26 22:12
  */
 @Slf4j
 @Indexed
 @Component
-@ConditionalOnProperty(prefix = "file-storage", name = "type", havingValue = "s3")
-public class S3StorageImpl extends AbstractFileStorageService {
+@ConditionalOnProperty(prefix = "file-storage", name = "type", havingValue = "ceph")
+public class CephStorageImpl extends AbstractFileStorageService {
 
     private final AmazonS3 s3Client;
 
@@ -48,16 +45,16 @@ public class S3StorageImpl extends AbstractFileStorageService {
 
     private final String nginxProxy;
 
-    public S3StorageImpl(FileProperties properties){
+    public CephStorageImpl(FileProperties properties){
         String endpoint = properties.getS3().getEndpoint();
         String accessKey = properties.getS3().getAccessKey();
         String secretKey = properties.getS3().getSecretKey();
         String region = properties.getS3().getRegion();
         BasicAWSCredentials basicAWSCredentials = new BasicAWSCredentials(accessKey, secretKey);
         AWSStaticCredentialsProvider awsCredentials = new AWSStaticCredentialsProvider(basicAWSCredentials);
-        this.s3Client =AmazonS3ClientBuilder.standard()
+        this.s3Client = AmazonS3ClientBuilder.standard()
                 .withCredentials(awsCredentials)
-                .withPathStyleAccessEnabled(false)
+                .withPathStyleAccessEnabled(true)
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region))
                 .build();
         this.bucketName = properties.getS3().getBucketName();
@@ -67,37 +64,35 @@ public class S3StorageImpl extends AbstractFileStorageService {
 
     @Override
     public boolean copyDir(String sourceDir, String targetDir) {
-        String sourceDirKey = handlerKeyPrefix(sourceDir);
-        String targetDirKey = handlerKeyPrefix(targetDir);
-        String nextMarker = null;
+        boolean flag = Boolean.TRUE;
+        String sourceDirKey = normalizeDirectory(sourceDir);
+        String targetDirKey = normalizeDirectory(targetDir);
         ObjectListing objectListing;
-        boolean flag = true;
         try {
+            // 删除目录及目录下的所有文件。
+            String nextMarker = null;
             do {
-                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                        .withBucketName(bucketName)
-                        .withPrefix(sourceDirKey)
-                        .withMarker(nextMarker); // 这里要用 `withMarker()`
-
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest().withBucketName(bucketName)
+                        .withPrefix(sourceDirKey).withDelimiter(nextMarker);
                 objectListing = s3Client.listObjects(listObjectsRequest);
                 for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
                     String sourceKey = objectSummary.getKey();
-                    String targetKey = sourceKey.replace(sourceDirKey, targetDirKey);
                     try {
+                        String targetKey = sourceKey.replace(sourceDirKey, targetDirKey);
                         if (StringUtils.isNotBlank(sourceKey)) {
                             CopyObjectRequest copyObjRequest = new CopyObjectRequest(bucketName, sourceKey, bucketName, targetKey);
                             s3Client.copyObject(copyObjRequest);
                         }
-                    }catch (Exception ex){
-                       flag = false;
-                       log.error("copy object error",ex);
+                    } catch (Exception e) {
+                        flag = Boolean.FALSE;
+                        log.error("copy object error！", e);
                     }
                 }
                 nextMarker = objectListing.getNextMarker();
-            }while (objectListing.isTruncated());
-        }catch (Exception ex){
-            flag = false;
-            log.error("copy object error",ex);
+            } while (objectListing.isTruncated());
+        } catch (Exception e) {
+            flag = Boolean.FALSE;
+            log.error("copy object error！", e);
         }
         return flag;
     }
@@ -105,125 +100,103 @@ public class S3StorageImpl extends AbstractFileStorageService {
     @Override
     public boolean downDir(String sourceDir, String localDir) {
         try {
-            String sourceDirKey = handlerKeyPrefix(sourceDir);
-            String localDirKey = handlerKeyPrefix(localDir);
+            String sourceDirKey = normalizeDirectory(sourceDir);
+            String localDirKey = normalizeDirectory(localDir);
             String nextMarker = null;
             ObjectListing objectListing;
             do {
                 ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
                         .withBucketName(bucketName)
                         .withPrefix(sourceDirKey)
-                        .withMarker(nextMarker); // 这里要用 `withMarker()`
+                        .withDelimiter(nextMarker);
 
                 objectListing = s3Client.listObjects(listObjectsRequest);
-
                 for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
                     String sourceKey = objectSummary.getKey();
-
-                    // ** 判断是否是目录**
-                    if (sourceKey.equals(sourceDirKey) || sourceKey.endsWith("/") || objectSummary.getSize() == 0) {
-                        log.info("Skipping directory: {}", sourceKey);
-                        FileUtil.mkdir(localDirKey + sourceKey.substring(sourceDirKey.length()));
-                        continue;
-                    }
-
-                    String localFilePath = localDirKey + sourceKey.substring(sourceDirKey.length());
-
-                    try (InputStream inputStream = getInputStreamByKey(sourceKey)) {
+                    String localKey = sourceKey.replace(sourceDirKey, localDirKey);
+                    try (InputStream inputStream = this.getInputStreamByKey(sourceKey)) {
                         if (inputStream != null) {
-                            File localFile = new File(localFilePath);
-                            FileUtil.writeFromStream(inputStream, localFile);
-                            log.info("Downloaded: {}", sourceKey);
-                        } else {
-                            log.warn("Skipping empty file: {}", sourceKey);
+                            FileUtil.writeFromStream(inputStream, localKey);
                         }
                     } catch (Exception e) {
-                        log.error("Failed to download {}: {}", sourceKey, e.getMessage(), e);
+                        log.error(sourceKey + " download failed " + e.getMessage());
                     }
                 }
                 nextMarker = objectListing.getNextMarker();
             } while (objectListing.isTruncated());
         } catch (Exception e) {
-            log.error("Download directory failed: {}", e.getMessage(), e);
-            return false;
+            log.error("download failed", e);
         }
         return FileUtil.exist(localDir);
     }
 
     @Override
     public String upload(InputStream inputStream, String targetPath, String fileName) {
-        return uploadInputStream(inputStream,targetPath,fileName);
+        return upLoadInputStream(inputStream, targetPath, fileName);
     }
 
     @Override
     public String upload(String content, String targetPath, String fileName) {
-        ByteArrayInputStream byteArrayInputStream = null;
-        byteArrayInputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
-        return uploadInputStream(byteArrayInputStream,targetPath,fileName);
+        try(ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
+            upLoadInputStream(inputStream, targetPath, fileName);
+        }catch (Exception e){
+            log.error("upload failed,targetPath:[{}],fileName:[{}]", targetPath, fileName);
+        }
+        return StringUtil.EMPTY;
     }
 
     @Override
     public List<String> upload(File[] files, String targetPath) {
-        if (files == null){
-            return Collections.emptyList();
+        if (files == null || files.length == 0) {
+            return Lists.newArrayList();
         }
-        List<String> urlList = Lists.newArrayList();
+        List<String> resultList = Lists.newArrayList();
         for (File file : files) {
-            String url = upload(file,targetPath,FileUtil.getName(file));
-            urlList.add(url);
+            String url = upload(file, targetPath, file.getName());
+            resultList.add(url);
         }
-        return urlList;
+        return resultList;
     }
 
     @Override
     public String upload(File file, String targetPath, String fileName) {
-        FileInputStream  inputStream = null;
-        try {
-            inputStream = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            log.error("file is not exists");
+        try(FileInputStream inputStream = new FileInputStream(file)) {
+            upLoadInputStream(inputStream, targetPath, fileName);
+        }catch (Exception e){
+            log.error("upload failed,targetPath:[{}],fileName:[{}]", targetPath, fileName);
         }
-        return uploadInputStream(inputStream,targetPath,fileName);
-
+        return StringUtil.EMPTY;
     }
 
     @Override
     public boolean download(String targetPath, String localPath, String fileName) {
-        String downPath;
-        try(InputStream inputStream = getInputStreamByKey(targetPath)){
-            downPath = buildKey(localPath,fileName);
-            if (inputStream != null) {
-                FileUtil.writeFromStream(inputStream, downPath);
+        String targetKey = getOssKey(targetPath);
+        String localKey = buildKey(localPath,fileName);
+        File file = null;
+        try(InputStream inputStream = getInputStreamByKey(targetKey)){
+            if (inputStream == null) {
+                return Boolean.FALSE;
             }
-        } catch (Exception e) {
-            log.error("download file from s3 error！", e);
-            return Boolean.FALSE;
+            file = FileUtil.writeFromStream(inputStream, localKey);
+        }catch (Exception e){
+            log.error("download failed,targetPath:[{}],localPath:[{}],fileName:[{}]", targetKey,localKey, fileName);
         }
-        return FileUtil.exist(downPath);
+        return FileUtil.exist(file);
     }
 
     @Override
     public InputStream getInputStream(String targetPath, String fileName) {
-        InputStream inputStream = null;
-        String ossKey = null;
-        try {
-            String decodePath = URLDecoder.decode(targetPath, PubCommonConst.UTF_8);
-            ossKey = targetPath.contains(fileName) ? decodePath : buildKey(decodePath,fileName);
-            inputStream = getInputStreamByKey(ossKey);
-            return inputStream;
-        }catch (Exception ex){
-            log.error("获取文件失败:[" + targetPath + "]");
-        }
-        return null;
+        String key = buildKey(targetPath, fileName);
+        String ossKey = getOssKey(key);
+        return getInputStreamByKey(ossKey);
     }
 
     @Override
     public InputStream getInputStreamByKey(String key) {
         InputStream inputStream = null;
-        String ossKey = key;
+        String ossKey = getOssKey(key);
         try {
-            ossKey = URLDecoder.decode(ossKey, PubCommonConst.UTF_8);
-            inputStream = s3Client.getObject(bucketName, getOssKey(ossKey)).getObjectContent();
+            inputStream = s3Client.getObject(bucketName, ossKey).getObjectContent();
             return inputStream;
         } catch (Exception e) {
             log.error("获取文件失败:[" + key + "]");
@@ -242,24 +215,25 @@ public class S3StorageImpl extends AbstractFileStorageService {
     @Override
     public boolean delete(String key) {
         if (isHasIllegalChar(key)){
-            log.error("delete file failed, key is illegal");
-            return Boolean.TRUE;
+            log.error("delete file failed, [{}] is illegal,can't be deleted", key);
+            return Boolean.FALSE;
         }
-        boolean flag = true;
-        //真实存储路径 前缀
+        boolean flag = Boolean.TRUE;
         try {
             key = removeUrlHost(key);
             String nextMarker = null;
             ObjectListing objectListing;
             do {
-                ListObjectsRequest listObjectsRequest = new ListObjectsRequest().withBucketName(bucketName)
-                        .withPrefix(handlerKeyPrefix(key)).withDelimiter(nextMarker);
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                        .withBucketName(bucketName)
+                        .withPrefix(handlerKeyPrefix(key))
+                        .withDelimiter(nextMarker);
                 objectListing = s3Client.listObjects(listObjectsRequest);
                 if (!objectListing.getObjectSummaries().isEmpty()) {
                     List<String> keysToDelete = new ArrayList<>();
                     for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
                         String keyPath = objectSummary.getKey();
-                        if (StringUtils.isNotBlank(keyPath)) {
+                        if (StringUtil.isNotBlank(keyPath)) {
                             keysToDelete.add(keyPath);
                         }
                     }
@@ -269,8 +243,8 @@ public class S3StorageImpl extends AbstractFileStorageService {
                 }
                 nextMarker = objectListing.getNextMarker();
             } while (objectListing.isTruncated());
-        } catch (Exception e) {
-            log.error("delete file field"+e.getMessage(), e);
+        }catch (Exception e){
+            log.error("delete file error,key is : [{}]",key,e);
             flag = Boolean.FALSE;
         }
         return flag;
@@ -278,64 +252,26 @@ public class S3StorageImpl extends AbstractFileStorageService {
 
     @Override
     public boolean copyFile(String currentPath, String targetPath) {
-        return false;
+        return Boolean.FALSE;
     }
 
     @Override
     public String getUrlByKey(String key) {
-        return getOrgUrlByKey(key,Boolean.TRUE);
+        return getOrgUrlByKey(key,Boolean.FALSE);
     }
 
     @Override
     public String getPathByKey(String key) {
-        return getOrgUrlByKey(key,Boolean.FALSE);
+        return getOrgUrlByKey(key,Boolean.TRUE);
     }
-
 
     @Override
     public void setPublicReadAcl(String path) {
         try {
-            path = URLDecoder.decode(path, PubCommonConst.UTF_8);
             s3Client.setObjectAcl(bucketName,getOssKey(path), CannedAccessControlList.PublicRead);
-        } catch (Exception e) {
-            log.error("setPublicReadAcl field"+e.getMessage(), e);
+        }catch (Exception e){
+            log.error("setPublicReadAcl error！,path:[{}]",path,e);
         }
-    }
-
-    /**
-     * 获取原始文件url
-     *
-     * @param key
-     * @return
-     */
-    protected String getOrgUrlByKey(String key, boolean isUrl) {
-      
-        String url = StringUtils.EMPTY;
-        key =  handlerKeyPrefix(key);
-        String keyPath = getOssKey(key);
-        boolean flag = s3Client.doesObjectExist(bucketName, keyPath);
-        try {
-            if (!flag) {
-                log.error("file does not exist,keyPath:[{}]",keyPath);   
-                return StringUtils.EMPTY;
-            }
-            Date expiration = new Date(System.currentTimeMillis() + EXPIRATION);
-            GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, keyPath);
-            generatePresignedUrlRequest.setExpiration(expiration);
-            String ossUrl = s3Client.generatePresignedUrl(generatePresignedUrlRequest).toString();
-            if (ossUrl.contains(FileConstant.HTTPS_DOMAIN_REGEX)) {
-                url = ossUrl.replaceAll(FileConstant.HTTPS_DOMAIN_REGEX, StringUtils.EMPTY);
-            }
-            if (ossUrl.contains(FileConstant.HTTP_DOMAIN_REGEX)) {
-                url = ossUrl.replaceAll(FileConstant.HTTP_DOMAIN_REGEX,  StringUtils.EMPTY);
-            }
-            if (urlTakeSign == URL_TAKE_SIGN_NO) {
-                url = url.split("\\?")[0];
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
-        return url;
     }
 
     /**
@@ -345,11 +281,11 @@ public class S3StorageImpl extends AbstractFileStorageService {
      * @param fileName
      * @return
      */
-    protected String uploadInputStream(InputStream inputStream, String targetPath, String fileName) {
+    public String upLoadInputStream(InputStream inputStream, String targetPath, String fileName) {
         String url = null;
-        String key = buildKey(targetPath, fileName);
+        String key = buildKey(targetPath , fileName);
         String keyPath = getOssKey(key);
-        try(InputStream in = inputStream;ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+        try(InputStream in = inputStream; ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
             byte[] data = new byte[2048];
             int reader;
             while ((reader = in.read(data, 0, data.length)) != -1) {
@@ -362,18 +298,14 @@ public class S3StorageImpl extends AbstractFileStorageService {
             s3Client.putObject(bucketName, keyPath, new ByteArrayInputStream(byteArray), objectMetadata);
             try {
                 setPublicReadAcl(keyPath);
+                log.info("set PublicRead success,keyPath : [{}]", keyPath);
             } catch (SdkClientException e) {
                 log.error("set PublicRead failed:", e);
             }
 
             GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, keyPath);
             String ossUrl = s3Client.generatePresignedUrl(generatePresignedUrlRequest).toString();
-            if (ossUrl.contains(FileConstant.HTTPS_PREFIX)) {
-                url = ossUrl.replaceAll(FileConstant.HTTPS_DOMAIN_REGEX, StringUtil.EMPTY);
-            }
-            if (ossUrl.contains(FileConstant.HTTP_PREFIX)) {
-                url = ossUrl.replaceAll(FileConstant.HTTP_DOMAIN_REGEX, StringUtil.EMPTY);
-            }
+            url = removeUrlHost(ossUrl);
             if (URL_TAKE_SIGN_NO == urlTakeSign) {
                 url = url.split("\\?")[0];
             }
@@ -383,8 +315,42 @@ public class S3StorageImpl extends AbstractFileStorageService {
         } catch (Exception e){
             log.error("upload OSS error！", e);
         }
-        return StringUtils.EMPTY;
+        return null;
     }
-    
 
+    /**
+     * 获取原始路径,其实就是通过可以获取到原始地址，如果isUrl为true的是话，那么就返回代理地址
+     * @param key
+     * @param isUrl 是否URL
+     * @return 完整的原始地址
+     */
+    protected String getOrgUrlByKey(String key,boolean isUrl){
+        String keyPath = getOssKey(key);
+        String url = StringUtil.EMPTY;
+        boolean flag = s3Client.doesObjectExist(bucketName, keyPath);
+        try {
+            if (!flag) {
+                log.error("file does not exist,keyPath:[{}]",keyPath);
+                return null;
+            }
+            Date expiration = new Date(System.currentTimeMillis() + EXPIRATION);
+            GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, keyPath);
+            generatePresignedUrlRequest.setExpiration(expiration);
+            String ossUrl = s3Client.generatePresignedUrl(generatePresignedUrlRequest).toString();
+            if (ossUrl.contains(FileConstant.HTTPS_PREFIX)) {
+                url = ossUrl.replaceAll(FileConstant.HTTPS_DOMAIN_REGEX, isUrl ? nginxProxy : StringUtil.EMPTY);
+            } else {
+                url.replaceAll(FileConstant.HTTP_DOMAIN_REGEX, StringUtil.EMPTY);
+                url = ossUrl.replaceAll(FileConstant.HTTP_DOMAIN_REGEX,  isUrl ? nginxProxy : StringUtil.EMPTY);
+            }
+            if (urlTakeSign == URL_TAKE_SIGN_NO) {
+                url = url.split("\\?")[0];
+            }
+            return url;
+        } catch (Exception e) {
+            log.error("getOrgUrlByKey error key:[{}],isUrl:[{}]",key,isUrl,e);
+            return null;
+        }
+
+    }
 }

@@ -1,9 +1,15 @@
 package com.peach.fileservice.controller;
 
+import cn.hutool.core.io.FileUtil;
+import com.jcraft.jsch.ChannelSftp;
+import com.peach.common.constant.PubCommonConst;
 import com.peach.common.response.Response;
 import com.peach.common.util.StringUtil;
 import com.peach.fileservice.common.constant.FileConstant;
-import com.peach.fileservice.common.util.FileUtil;
+import com.peach.fileservice.common.util.FileUtils;
+import com.peach.fileservice.common.util.NasUtil;
+import com.peach.fileservice.common.util.shh.NasSftpService;
+import com.peach.fileservice.common.util.shh.bean.SshChannel;
 import com.peach.fileservice.config.FileProperties;
 import com.peach.fileservice.impl.AbstractFileStorageService;
 import io.swagger.annotations.ApiOperation;
@@ -21,6 +27,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
+import java.nio.file.Paths;
+import java.util.Map;
 
 /**
  * @Author Mr Shu
@@ -47,7 +55,7 @@ public class PubFileController {
         String filePath = StringUtil.EMPTY;
         String targetFilePath = fileProperties.getPubDirPrefix() + FileConstant.PATH_SEPARATOR  + System.currentTimeMillis();
         try {
-            File targetFile = FileUtil.convertMultipartFileToFile(file);
+            File targetFile = FileUtils.convertMultipartFileToFile(file);
             filePath = fileStorageService.upload(new FileInputStream(targetFile), targetFilePath, file.getOriginalFilename());
             filePath = fileStorageService.getUrlByKey(filePath);
         }catch (Exception ex){
@@ -87,7 +95,26 @@ public class PubFileController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + URLEncoder.encode(fileName, "UTF-8") + "\"")
+                        "attachment; filename=\"" + URLEncoder.encode(fileName, PubCommonConst.UTF_8) + "\"")
                 .body(stream);
+    }
+
+    @PostMapping("/sftp/upload")
+    @ApiOperation("上传文件，返回文件地址")
+    public Response sftpUpload(@RequestBody Map<String,Object> map) {
+        String remoteDirPath =  fileProperties.getPubDirPrefix() + FileConstant.PATH_SEPARATOR  + System.currentTimeMillis();
+        SshChannel nasChannelSftp = NasSftpService.getNasChannelSftp();
+        ChannelSftp channelSftp = nasChannelSftp.getChannelSftp();
+        String localFilePath = StringUtil.getStringValue(map.get("localFilePath"));
+        String fileName = FileUtil.getName(Paths.get(localFilePath));
+        try(FileInputStream fileInputStream = new FileInputStream(localFilePath)) {
+            NasUtil.upLoadInputStream(fileInputStream,remoteDirPath,fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("SFTP 上传文件失败: " + e.getMessage(), e);
+        } finally {
+            NasSftpService.returnNasChannelSftp(nasChannelSftp);
+        }
+        return Response.success().setData(localFilePath).setMsg("FTP文件上传成功");
     }
 }

@@ -5,8 +5,10 @@ import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
+import com.peach.common.constant.PubCommonConst;
 import com.peach.common.util.StringUtil;
 import com.peach.fileservice.DiskDO;
+import com.peach.fileservice.common.constant.FileConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,9 +23,10 @@ import java.net.URLEncoder;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @Author Mr Shu
@@ -231,52 +234,101 @@ public abstract class AbstractFileStorageService{
      * @param dirName
      * @return
      */
-    public String getOssKey(String dirName) {
-        boolean isFirst = true;
-        StringBuilder result = new StringBuilder();
-        List<String> dirPathList = new LinkedList<>();
-        String[] str = dirName.split("\\?");
-        String path = str[0];
-        String[] dirSins = path.split("/");
-        for (String dirsin : dirSins) {
-            if (StringUtil.isBlank(dirsin)) {
-                continue;
-            }
-            String[] childDirs = dirsin.split("\\\\");
-            for (String childDir : childDirs) {
-                if (StringUtil.isNotBlank(childDir)) {
-                    dirPathList.add(childDir);
-                }
-            }
+    protected String getOssKey(String dirName) {
+        if (StringUtils.isBlank(dirName)) {
+            return dirName;
         }
-        for (String dirPath : dirPathList) {
-            if (isFirst) {
-                result = new StringBuilder(dirPath);
-                isFirst = false;
-            } else {
-                result.append("/").append(dirPath);
-            }
+
+        dirName = decodeKey(dirName);
+
+        // 去除查询参数 ?xxx=yyy
+        String rawPath = dirName.split("\\?")[0];
+
+        // 统一路径分隔符，将 \ 替换为 /
+        String normalizedPath = normalizePath(rawPath);
+
+        // 使用 Stream 去除空段并重新拼接
+        String cleaned = Arrays.stream(normalizedPath.split(FileConstant.PATH_SEPARATOR))
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.joining(FileConstant.PATH_SEPARATOR));
+        log.debug("[getOssKey] original: {}, cleaned: {}", dirName, cleaned);
+        return cleaned;
+    }
+
+    /**
+     * 解码key
+     * @param key
+     * @return
+     * @throws UnsupportedEncodingException
+     */
+    protected String decodeKey(String key) {
+        if (StringUtils.isBlank(key)) {
+            return key;
         }
-        return result.toString();
+        try {
+            return URLDecoder.decode(key, PubCommonConst.UTF_8);
+        }catch (Exception e){
+            log.error("[decodeKey] decode error for key: {}", key, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 替换所有的//为/
+     * @param key
+     * @return
+     */
+    private String normalizePath(String key){
+        if (StringUtils.isBlank(key)) {
+            return key;
+        }
+        String result = key.trim().replace("\\", "/")        // 将所有反斜杠替换为正斜杠
+                .replaceAll("/\\./", "/")
+                .replaceAll("/{2,}", "/");          // 多个 / 替换为一个
+
+        log.debug("[normalizePath] input: [{}], normalized: [{}]", key, result);
+        return result;
     }
 
 
     /**
-     * 检查文件路径是否包含非法字符
+     * 检查文件路径是否包含非法字符 防止删除根目录、父目录或非法路径
      * @param key
      * @return
      */
     protected boolean isHasIllegalChar(String key) {
-        if ("/".equals(key) || "//".equals(key) || "\\".equals(key) || "\\\\".equals(key)
-                || ".".equals(key) || "..".equals(key) || "".equals(key)) {
-            return true;
+        try {
+            if (StringUtil.isBlank(key)) {
+                throw new IllegalArgumentException("Path cannot be blank");
+            }
+
+            // 清理路径前后的空格，并统一为正斜杠
+            key = normalizePath(key);
+
+            // 不允许删除根目录或上级目录
+            if (key.equals("/") || key.equals("..") || key.equals(".") || key.equals("")) {
+                throw new IllegalArgumentException("Path cannot be /, .., or .");
+            }
+
+            // 不允许路径中包含 .. 或 ./ 等不规范路径
+            if (key.contains("/../") || key.contains("/./") || key.contains("//")) {
+                throw new IllegalArgumentException("Path contains invalid sequences like ../ or //");
+            }
+
+            // 可选：不允许路径结尾为 .. 或 .
+            if (key.endsWith("/..") || key.endsWith("/.")) {
+                throw new IllegalArgumentException("Path should not end with .. or .");
+            }
+        }catch (Exception e){
+            log.error("check file path is illegal,path:{}",key,e);
+            return Boolean.TRUE;
         }
-        return false;
+        return Boolean.FALSE;
     }
 
     /**
-     * 移除url中的host
-     * @param url
+     * 移除url中的host,支持http、https
+     * @param url 附件的完整路径
      * @return
      */
     protected String removeUrlHost(String url) {
@@ -284,40 +336,77 @@ public abstract class AbstractFileStorageService{
             log.error("this url is blank,can't be remove");
             return url;
         }
-        if (url.contains("https://")) {
-            return url.replaceAll("https://[^/]+", "");
+        if (url.contains(FileConstant.HTTPS_PREFIX)) {
+            return url.replaceAll(FileConstant.HTTPS_DOMAIN_REGEX, StringUtil.EMPTY);
         }
-        if (url.contains("http://")) {
-            return url.replaceAll("http://[^/]+", "");
+        if (url.contains(FileConstant.HTTP_PREFIX)) {
+            return url.replaceAll(FileConstant.HTTP_DOMAIN_REGEX, StringUtil.EMPTY);
         }
         return url;
     }
 
+
+    /**
+     * 用于删除时 清洗文件或文件夹的路径
+     * @param key 文件或文件夹的路径
+     * @return
+     */
     protected String handlerKeyPrefix(String key) {
-        String prefix;
-        //判断是文件还是文件夹
-        if (key.startsWith("/")) {
-            key = key.replaceFirst("/", "");
+        if (StringUtil.isBlank(key)) {
+            return key;
         }
-        if (key.contains(".") || key.contains("?")) {
-            prefix = key;
-        } else {
-            if (key.endsWith("/")) {
-                prefix = key;
-            } else {
-                prefix = key + "/";
-            }
-        }
-        if (prefix.contains("?")) {
-            prefix = prefix.split("\\?")[0];
-        }
-        try {
-            prefix = URLDecoder.decode(prefix, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+        key = normalizePath(key);
+        key = key.replaceFirst("^/", "");
+        key = decodeKey(key);
+
+        String prefix = key.contains("?") ? key.split("\\?")[0] : key;
+        if (!prefix.contains(".") && !prefix.endsWith("/")) {
+            prefix += "/";
         }
         return prefix;
     }
+
+    /**
+     * 获取处理之后的path
+     * @param path 文件路径
+     * @param fileName 文件名
+     * @return
+     */
+    protected String buildKey(String path,String fileName) {
+        path = normalizePath(path);
+        if (!path.endsWith(FileConstant.PATH_SEPARATOR)) {
+            path += FileConstant.PATH_SEPARATOR;
+        }
+        String fullKey = path + fileName;
+        log.debug("[buildKey] path: [{}], fileName: [{}], fullKey: [{}]", path, fileName, fullKey);
+        return fullKey;
+    }
+
+    /**
+     * 标准化目录路径
+     * @param dir
+     * @return
+     */
+    protected String normalizeDirectory(String dir) {
+        if (dir == null || dir.trim().isEmpty()) {
+            return "";
+        }
+
+        dir = dir.trim();
+
+        // 去除开头的 "/"
+        if (dir.startsWith(FileConstant.PATH_SEPARATOR)) {
+            dir = dir.substring(1);
+        }
+
+        // 添加结尾的 "/"
+        if (!dir.endsWith(FileConstant.PATH_SEPARATOR)) {
+            dir += FileConstant.PATH_SEPARATOR;
+        }
+
+        return normalizePath(dir);
+    }
+
 
     /**
      * 定义本地上传的逻辑，其他存储方式需要重写此方法
@@ -345,8 +434,8 @@ public abstract class AbstractFileStorageService{
      */
     protected String uploadInputStream(InputStream inputStream, String targetPath, String fileName) {
         // 1、上传文件
-        String localPath = targetPath.endsWith(PATH_SEPARATOR) ?  targetPath : targetPath + PATH_SEPARATOR ;
-        String key = localPath + fileName;
+        String standardPath = normalizeDirectory(targetPath) ;
+        String key = buildKey(standardPath, fileName);
 
         try {
             File file = retryer.call(() -> {
@@ -359,12 +448,21 @@ public abstract class AbstractFileStorageService{
         }
 
         try {
-            return localPath.replace(File.separator, PATH_SEPARATOR) + URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20") + "?timestamp=" + System.currentTimeMillis();
+            return standardPath.replace(File.separator, PATH_SEPARATOR) + URLEncoder.encode(fileName, PubCommonConst.UTF_8)
+                    .replaceAll("\\+", "%20") + "?timestamp=" + System.currentTimeMillis();
         } catch (UnsupportedEncodingException e) {
             log.error("UnsupportedEncodingException"+e.getMessage(),e);
             throw new RuntimeException(e);
         }
     }
 
-
+    /**
+     * 通过键获取原始URL或路径, 默认返回本地的路径，其他的实现需要重写该方法
+     * @param key 文件键 / File key
+     * @param isUrl 是否返回URL或者路径
+     * @return URL 或者路径 / URL or Path
+     */
+    protected String getOrgUrlByKey(String key,boolean isUrl) {
+       return StringUtil.EMPTY;
+    }
 }

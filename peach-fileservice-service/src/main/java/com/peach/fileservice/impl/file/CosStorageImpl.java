@@ -3,6 +3,8 @@ package com.peach.fileservice.impl.file;
 import cn.hutool.core.io.FileUtil;
 import com.google.common.collect.Lists;
 import com.peach.common.constant.PubCommonConst;
+import com.peach.common.util.StringUtil;
+import com.peach.fileservice.common.constant.FileConstant;
 import com.peach.fileservice.config.FileProperties;
 import com.peach.fileservice.impl.AbstractFileStorageService;
 import com.qcloud.cos.COSClient;
@@ -87,7 +89,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
             return true;
         } catch (Exception e) {
             log.error("copyDir error! sourceDir={}, targetDir={}", sourceDir, targetDir, e);
-            return false;
+            return Boolean.FALSE;
         }
     }
 
@@ -118,7 +120,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
             return true;
         } catch (Exception e) {
             log.error("downDir error! sourceDir={}, localDir={}", sourceDir, localDir, e);
-            return false;
+            return Boolean.FALSE;
         }
     }
 
@@ -159,14 +161,13 @@ public class CosStorageImpl extends AbstractFileStorageService {
     public boolean download(String targetPath, String localPath, String fileName) {
         File file = null;
         try (InputStream inputStream = getInputStreamByKey(targetPath) ) {
-            String downloadPath = (localPath.endsWith(File.separator) || localPath.endsWith(PATH_SEPARATOR)) ? localPath : localPath + File.separator;
+            String downloadPath = normalizeDirectory(localPath);
             if (inputStream != null){
-                file = FileUtil.writeFromStream(inputStream, new File(downloadPath +  fileName));
+                file = FileUtil.writeFromStream(inputStream, new File(buildKey(downloadPath , fileName)));
             }
         }catch (Exception ex){
-            log.error("download file error！", ex);
+            log.error("download file filed"+ex.getMessage(), ex);
         }
-
         return FileUtil.exist(file);
     }
 
@@ -179,12 +180,11 @@ public class CosStorageImpl extends AbstractFileStorageService {
             if (decodePath.contains(fileName)){
                 key = decodePath;
             }else {
-                decodePath = decodePath.endsWith(PATH_SEPARATOR) ? decodePath : decodePath + PATH_SEPARATOR;
-                key = decodePath + fileName;
+                key = buildKey(decodePath, fileName);
             }
             inputStream = cosClient.getObject(bucketName, getOssKey(key)).getObjectContent();
         } catch (UnsupportedEncodingException e) {
-            log.error("UnsupportedEncodingException"+e.getMessage(),e);
+            log.error("getInputStream UnsupportedEncoding filed"+e.getMessage(),e);
         }
         return inputStream;
     }
@@ -194,14 +194,14 @@ public class CosStorageImpl extends AbstractFileStorageService {
         InputStream inputStream = null;
         String ossKey = key;
         try {
-            ossKey = URLDecoder.decode(ossKey, "UTF-8");
+            ossKey = URLDecoder.decode(ossKey, PubCommonConst.UTF_8);
             inputStream = cosClient.getObject(bucketName, getOssKey(ossKey)).getObjectContent();
             return inputStream;
         } catch (Exception e) {
-            log.error("获取文件失败:[" + key + "]");
+            log.error("getInputStreamByKey field:[{}]",key);
             ossKey = ossKey.replace(bucketName + "/", "");
             try {
-                log.info("bucketName:[" + bucketName + "],replace key:[" + ossKey + "]");
+                log.info("bucketName:[｛｝],replace key:[｛｝]",bucketName,ossKey);
                 inputStream = cosClient.getObject(bucketName, ossKey).getObjectContent();
                 return inputStream;
             } catch (Exception ex) {
@@ -215,8 +215,8 @@ public class CosStorageImpl extends AbstractFileStorageService {
     public boolean delete(String key) {
         // 校验 key 是否含非法字符，不符合要求则直接返回 false
         if (isHasIllegalChar(key)) {
-            log.warn("非法 key，禁止删除: {}", key);
-            return false;
+            log.error("delete file failed, [{}] is illegal,can't be deleted", key);
+            return Boolean.FALSE;
         }
         boolean flag = true;
         try {
@@ -247,7 +247,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
                         cosClient.deleteObjects(deleteObjectsRequest);
                         log.info("成功删除 {} 个对象", keys.size());
                     } catch (Exception e) {
-                        flag = false;  // 只要删除失败，最终返回 false
+                        flag = Boolean.FALSE;  // 只要删除失败，最终返回 false
                         log.error("删除对象失败: {}", keyList, e);
                     }
                 }
@@ -257,7 +257,7 @@ public class CosStorageImpl extends AbstractFileStorageService {
 
             log.info("目录 [{}] 及其所有文件已删除完成", key);
         } catch (Exception e) {
-            flag = false;
+            flag = Boolean.FALSE;
             log.error("CosDeleteObject error！key: {}", key, e);
         }
         return flag;
@@ -272,25 +272,18 @@ public class CosStorageImpl extends AbstractFileStorageService {
             return true;
         } catch (Exception e) {
             log.error("copyFile error! currentPath={}, targetPath={}", currentPath, targetPath, e);
-            return false;
+            return Boolean.FALSE;
         }
     }
 
     @Override
     public String getUrlByKey(String key) {
-        try {
-            key = handlerKeyPrefix(URLDecoder.decode(key, "UTF-8"));
-            Date expiration = new Date(System.currentTimeMillis() + EXPIRATION); // 可配置默认值
-            return cosClient.generatePresignedUrl(bucketName, key, expiration).toString();
-        } catch (Exception e) {
-            log.error("getUrlByKey error! key={}", key, e);
-            return "";
-        }
+        return getOrgUrlByKey(key,Boolean.TRUE);
     }
 
     @Override
     public String getPathByKey(String key) {
-        return "";
+        return getOrgUrlByKey(key,Boolean.FALSE);
     }
 
     @Override
@@ -305,21 +298,25 @@ public class CosStorageImpl extends AbstractFileStorageService {
         }
     }
 
-    /**
-     * 上传文件
-     * @param file
-     * @param targetPath
-     * @param fileName
-     * @return
-     */
-    protected String uploadFile(File file,String targetPath,String fileName){
-        try (InputStream inputStream = FileUtil.getInputStream(file)){
-            return uploadInputStream(inputStream,targetPath,fileName);
-        }catch (Exception ex){
-            log.error("upload file to cos failed");
-            return null;
+    protected String getOrgUrlByKey(String key, boolean isUrl) {
+        try {
+            key = handlerKeyPrefix(URLDecoder.decode(key, PubCommonConst.UTF_8));
+            Date expiration = new Date(System.currentTimeMillis() + EXPIRATION); // 可配置默认值
+            String ossUrl = cosClient.generatePresignedUrl(bucketName, key, expiration).toString();
+            String url = StringUtil.EMPTY;
+            if (ossUrl.contains(FileConstant.HTTPS_PREFIX)) {
+                url = ossUrl.replaceAll(FileConstant.HTTPS_DOMAIN_REGEX, isUrl ? nginxProxy : StringUtil.EMPTY);
+            }
+            if (ossUrl.contains(FileConstant.HTTP_PREFIX)) {
+                url = ossUrl.replaceAll(FileConstant.HTTP_DOMAIN_REGEX, isUrl ? nginxProxy : StringUtil.EMPTY);
+            }
+            return url;
+        } catch (Exception e) {
+            log.error("getUrlByKey error! key={}", key, e);
+            return StringUtil.EMPTY;
         }
     }
+
 
 
     /**
@@ -330,9 +327,8 @@ public class CosStorageImpl extends AbstractFileStorageService {
      * @return
      */
     protected String uploadInputStream(InputStream inputStream, String targetPath, String fileName) {
-        String url = null;
-        String localPath = targetPath.endsWith(PATH_SEPARATOR) ? targetPath : targetPath + PATH_SEPARATOR;
-        String key = localPath + fileName;
+        String url = StringUtil.EMPTY;
+        String key = buildKey(targetPath, fileName);
         try {
             //上传文件
             PutObjectResult result = cosClient.putObject(bucketName, getOssKey(key), inputStream, null);

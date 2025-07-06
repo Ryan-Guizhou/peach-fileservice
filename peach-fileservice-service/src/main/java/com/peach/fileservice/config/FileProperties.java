@@ -28,6 +28,16 @@ public class FileProperties {
     private String nginxProxy;
 
     /**
+     * 公共的上传地址前缀
+     */
+    private String pubDirPrefix;
+
+    /**
+     * 私有上传地址前缀
+     */
+    private String privateDirPrefix;
+
+    /**
      * monio相关配置
      */
     private MinioConfig minio;
@@ -58,9 +68,12 @@ public class FileProperties {
     private LocalConfig local;
 
     /**
-     * 公共的上传地址
+     * Nas 配置
      */
-    private String pubDirPrefix;
+    private NasConfig nas;
+
+
+    private ObsConfig obs;
 
 
 
@@ -134,6 +147,44 @@ public class FileProperties {
 
         private String tempPath;
 
+    }
+
+    @Data
+    public static class CephConfig {
+
+        private String endpoint;
+
+        private String accessKey;
+
+        private String secretKey;
+
+        private String bucketName;
+
+        private String region;
+
+        private Integer urlTakeSign;
+
+    }
+
+    @Data
+    public static class NasConfig {
+
+        /**
+         * REMOTE:远程NAS LOCAL:本地NAS
+         */
+        private String type;
+    }
+
+    @Data
+    public static class ObsConfig {
+
+        private String endpoint;
+
+        private String accessKey;
+
+        private String secretKey;
+
+        private String bucketName;
     }
 
 

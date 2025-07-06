@@ -5,6 +5,8 @@ import com.aliyun.oss.OSSClient;
 import com.aliyun.oss.model.*;
 import com.google.common.collect.Lists;
 import com.peach.common.constant.PubCommonConst;
+import com.peach.common.util.StringUtil;
+import com.peach.fileservice.common.constant.FileConstant;
 import com.peach.fileservice.impl.AbstractFileStorageService;
 import com.peach.fileservice.config.FileProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -92,7 +94,7 @@ public class OssStorageImpl extends AbstractFileStorageService {
     public boolean download(String targetPath, String localPath, String fileName) {
         File file = null;
         try (InputStream inputStream = getInputStreamByKey(targetPath) ) {
-            String downloadPath = (localPath.endsWith(File.separator) || localPath.endsWith(PATH_SEPARATOR)) ? localPath : localPath + File.separator;
+            String downloadPath = normalizeDirectory(localPath);
             if (inputStream != null){
                file = FileUtil.writeFromStream(inputStream, new File(downloadPath +  fileName));
             }
@@ -111,12 +113,11 @@ public class OssStorageImpl extends AbstractFileStorageService {
             if (decodePath.contains(fileName)){
                 key = decodePath;
             }else {
-                decodePath = decodePath.endsWith(PATH_SEPARATOR) ? decodePath : decodePath + PATH_SEPARATOR;
-                key = decodePath + File.separator + fileName;
+                key = buildKey(decodePath, fileName);
             }
             inputStream = ossClient.getObject(bucketName, getOssKey(key)).getObjectContent();
         } catch (UnsupportedEncodingException e) {
-           log.error("UnsupportedEncodingException "+e.getMessage(),e);
+           log.error("ossStorageImpl unsupportedEncoding field "+e.getMessage(),e);
         }
         return inputStream;
     }
@@ -126,10 +127,10 @@ public class OssStorageImpl extends AbstractFileStorageService {
         InputStream inputStream = null;
         //真实存储路径 前缀
         try {
-            key = URLDecoder.decode(key, "UTF-8");
+            key = URLDecoder.decode(key, PubCommonConst.UTF_8);
             inputStream = ossClient.getObject(bucketName, getOssKey(key)).getObjectContent();
         } catch (Exception e) {
-            log.error("getInputStream error！", e);
+            log.error("ossStorageImpl getInputStream field！"+e.getMessage(), e);
         }
         return inputStream;
     }
@@ -140,10 +141,11 @@ public class OssStorageImpl extends AbstractFileStorageService {
         // 校验删除文件的key，如果不符合要求 直接返回
         boolean hasIllegalChar = isHasIllegalChar(key);
         if (hasIllegalChar){
-            return hasIllegalChar;
+            log.error("delete file failed, [{}] is illegal,can't be deleted", key);
+            return Boolean.FALSE;
         }
 
-        boolean flag = true;
+        boolean flag = Boolean.TRUE;
         try {
             key = removeUrlHost(key);
             // 删除目录及目录下的所有文件。
@@ -181,33 +183,52 @@ public class OssStorageImpl extends AbstractFileStorageService {
 
     @Override
     public String getUrlByKey(String key) {
-        return "";
+        return getOrgUrlByKey(key,Boolean.TRUE);
     }
 
     @Override
     public String getPathByKey(String key) {
-        return "";
+        return getOrgUrlByKey(key,Boolean.FALSE);
     }
 
     @Override
     public void setPublicReadAcl(String path) {
-
+        try {
+            path = URLDecoder.decode(path,PubCommonConst.UTF_8);
+        }catch (Exception ex){
+            log.error("ossStorageImpl unsupportedEncoding field "+ex.getMessage(),ex);
+        }
+        ossClient.setObjectAcl(bucketName,getOssKey(path),CannedAccessControlList.PublicRead);
     }
 
-    /**
-     * 上传文件
-     * @param file
-     * @param targetPath
-     * @param fileName
-     * @return
-     */
-    protected String uploadFile(File file, String targetPath, String fileName) {
-        try (FileInputStream fileInputStream = new FileInputStream(file)) {
-            return uploadInputStream(fileInputStream, targetPath, fileName);
-        } catch (Exception e) {
-            log.error("file save error ", e);
+    protected String getOrgUrlByKey(String key, boolean isUrl) {
+        try {
+            key = URLDecoder.decode(key,PubCommonConst.UTF_8);
+        }catch (Exception ex){
+            log.error("ossStorageImpl unsupportedEncoding field "+ex.getMessage(),ex);
+            throw new RuntimeException("ossStorageImpl unsupportedEncoding field "+ex.getMessage(),ex);
         }
-        return null;
+        String keyPath = getOssKey(key);
+        String url = StringUtil.EMPTY;
+        try {
+            boolean isExist = ossClient.doesObjectExist(bucketName, keyPath);
+            if (!isExist){
+                log.error("ossStorageImpl doesObjectExist fail");
+                return url;
+            }
+            Date expiration = new Date(System.currentTimeMillis() + EXPIRATION);
+            String ossUrl = ossClient.generatePresignedUrl(bucketName,keyPath,expiration).toString();
+            if (ossUrl.contains(FileConstant.HTTPS_PREFIX)) {
+                url = ossUrl.replaceAll(FileConstant.HTTPS_DOMAIN_REGEX, isUrl ? nginxProxy : StringUtil.EMPTY);
+            }
+            if (ossUrl.contains(FileConstant.HTTP_PREFIX)) {
+                url = ossUrl.replaceAll(FileConstant.HTTP_DOMAIN_REGEX, isUrl ? nginxProxy : StringUtil.EMPTY);
+            }
+            return url;
+        }catch (Exception ex){
+            log.error("ossStorageImpl unsupportedEncoding field "+ex.getMessage(),ex);
+            return url;
+        }
     }
 
     /**

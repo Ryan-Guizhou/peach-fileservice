@@ -1,14 +1,16 @@
 package com.peach.fileservice.impl.file;
 
 import com.google.common.collect.Lists;
+import com.mongodb.MongoGridFSException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
-import com.peach.fileservice.impl.AbstractFileStorageService;
+import com.peach.common.util.StringUtil;
 import com.peach.fileservice.config.FileProperties;
+import com.peach.fileservice.impl.AbstractFileStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -134,7 +136,14 @@ public class MongoStorageImpl extends AbstractFileStorageService {
 
     @Override
     public InputStream getInputStream(String targetPath, String fileName) {
-        return null;
+        String key = buildKey(targetPath, fileName);
+        String cleanKey = key.contains("?") ? key.substring(0, key.indexOf("?")) : key;
+        try {
+            return gridFSBucket.openDownloadStream(cleanKey);
+        } catch (MongoGridFSException e) {
+            log.warn("key:{} does not exist", cleanKey);
+            return null;
+        }
     }
 
     @Override
@@ -144,17 +153,28 @@ public class MongoStorageImpl extends AbstractFileStorageService {
 
     @Override
     public boolean copyFile(String currentPath, String targetPath) {
-        return false;
+        try (InputStream inputStream = getInputStreamByKey(currentPath)) {
+            if (inputStream == null) {
+                log.warn("源文件不存在: {}", currentPath);
+                return false;
+            }
+            ObjectId fileId = gridFSBucket.uploadFromStream(targetPath, inputStream);
+            log.info("文件复制成功: {} -> {}, 新ID: {}", currentPath, targetPath, fileId.toHexString());
+            return true;
+        } catch (Exception e) {
+            log.error("文件复制失败: {} -> {}", currentPath, targetPath, e);
+            return false;
+        }
     }
 
     @Override
     public String getUrlByKey(String key) {
-        return "";
+        return StringUtil.EMPTY;
     }
 
     @Override
     public String getPathByKey(String key) {
-        return "";
+        return StringUtil.EMPTY;
     }
 
     @Override

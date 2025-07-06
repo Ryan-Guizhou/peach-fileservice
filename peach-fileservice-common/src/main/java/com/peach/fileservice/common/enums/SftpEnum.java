@@ -1,0 +1,12 @@
+package com.peach.fileservice.common.enums;
+
+/**
+ * @Author Mr Shu
+ * @Version 1.0.0
+ * @Description //TODO
+ * @CreateTime 2025/7/6 13:27
+ */
+public enum SftpEnum {
+    NAS, // nas
+    CUSTOM; // 通用sftp方式
+}

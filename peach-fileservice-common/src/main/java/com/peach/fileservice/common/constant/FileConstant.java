@@ -16,6 +16,10 @@ public interface FileConstant {
 
     String SEPARATOR_REG = "/{2,}";
 
+    /**
+     * 普通字符串 http:// 开头
+     */
+    String HTTP_PREFIX = "http://";
 
     /**
      * 普通字符串 https:// 开头
